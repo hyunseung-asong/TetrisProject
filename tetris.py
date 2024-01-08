@@ -176,7 +176,9 @@ def main():
 # move down and place on timer
 # end game conditions
 # hold down keys
-#
+# hold piece function
+# draw held piece and next piece
+# draw next 5 pieces
 
 
 
