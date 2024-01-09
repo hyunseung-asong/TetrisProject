@@ -17,12 +17,15 @@ BOARD_HEIGHT = 24
 BOX_SIZE = 20
 BLANK = 0
 
-MOVE_SIDEWAYS_FREQ = 0.15
-MOVE_DOWN_FREQ = 0.1
-FALL_FREQ = 0.5
+MOVE_SIDEWAYS_OFFSET = 0.15
+MOVE_SIDEWAYS_FREQ = 0.04
+MOVE_DOWN_FREQ = 0.04
+FALL_FREQ = 1
 
 X_MARGIN = (WINDOW_WIDTH / 2) - (BOARD_WIDTH * BOX_SIZE / 2)
 Y_MARGIN = (WINDOW_HEIGHT / 2) - (BOARD_HEIGHT * BOX_SIZE / 2)
+
+NUM_NEXT_PIECES = 5
 
 I_PIECE = [[[0, 0, 0, 0],
             [1, 1, 1, 1],
@@ -173,13 +176,10 @@ def main():
 
 
 # TO DO:
-# move down and place on timer
 # end game conditions
-# hold down keys
 # hold piece function
 # draw held piece and next piece
 # draw next 5 pieces
-
 
 
 def run_game():
@@ -187,25 +187,67 @@ def run_game():
     board = new_board()
     piece_bag = list(PIECE_SHAPES.keys())
     curr_piece = get_new_piece(piece_bag)
-    next_piece = get_new_piece(piece_bag)
+    next_pieces = [get_new_piece(piece_bag) for _ in range(NUM_NEXT_PIECES)]
+
     game_over = False
+
+    inital_move_side_done = False
+    last_move_down_time = time.time()
+    last_move_side_time = time.time()
+    last_move_side_pressed = time.time()
+    last_fall_time = time.time()
+    moving_left = False
+    moving_right = False
+    moving_down = False
+    piece_placed = False
 
     # game loop
     while not game_over:
         check_for_quit()
-        event_occurred = False
+
+        # get next piece
+        if curr_piece is None:
+            curr_piece = next_pieces[0]
+            if not piece_bag:
+                piece_bag = list(PIECE_SHAPES.keys())
+            for i in range(NUM_NEXT_PIECES - 1):
+                next_pieces[i] = next_pieces[i + 1]
+            next_pieces[NUM_NEXT_PIECES - 1] = get_new_piece(piece_bag)
+
         for event in pygame.event.get():
             # key pressed
-            if event.type == KEYDOWN:
-                event_occurred = True
+            if event.type == KEYUP:
+                if event.key == K_LEFT:
+                    moving_left = False
+                    inital_move_side_done = False
+                elif event.key == K_RIGHT:
+                    moving_right = False
+                    inital_move_side_done = False
+                elif event.key == K_DOWN:
+                    moving_down = False
+            elif event.type == KEYDOWN:
 
                 if event.key == K_LEFT:
                     move_piece(board, curr_piece, -1, 0)
+                    moving_left = True
+                    moving_right = False
+                    last_move_side_time = time.time()
+                    last_move_side_pressed = time.time()
+                    if not inital_move_side_done:
+                        inital_move_side_done = True
+                        last_move_side_pressed = time.time()
                 elif event.key == K_RIGHT:
                     move_piece(board, curr_piece, 1, 0)
+                    moving_left = False
+                    moving_right = True
+                    last_move_side_time = time.time()
+                    if not inital_move_side_done:
+                        inital_move_side_done = True
+                        last_move_side_pressed = time.time()
                 elif event.key == K_DOWN:
                     move_piece(board, curr_piece, 0, 1)
-
+                    moving_down = True
+                    last_move_down_time = time.time()
                 elif event.key == K_UP:
                     # rotate clockwise
                     rotate_piece(board, curr_piece, 1)
@@ -217,28 +259,56 @@ def run_game():
                         if not is_valid_position(board, curr_piece, adjy=i):
                             break
                     curr_piece['y'] += i - 1
+                    piece_placed = True
+                    moving_down = False
+                    moving_left = False
+                    moving_right = False
 
-                    add_to_board(board, curr_piece)
-                    curr_piece = next_piece
-                    if not piece_bag:
-                        piece_bag = list(PIECE_SHAPES.keys())
-                    next_piece = get_new_piece(piece_bag)
+        # continue moving side if key is held
+        if inital_move_side_done and time.time() - last_move_side_pressed > MOVE_SIDEWAYS_OFFSET:
+            if (moving_left or moving_right) and time.time() - last_move_side_time > MOVE_SIDEWAYS_FREQ:
+                if moving_left:
+                    move_piece(board, curr_piece, -1, 0)
+                elif moving_right:
+                    move_piece(board, curr_piece, 1, 0)
+                last_move_side_time = time.time()
+
+        # continue moving down if key is held (softdrop)
+        if moving_down and time.time() - last_move_down_time > MOVE_DOWN_FREQ:
+            move_piece(board, curr_piece, 0, 1)
+            last_move_down_time = time.time()
+            last_fall_time = time.time()
+
+        # let piece fall naturally
+        if FALL_FREQ < time.time() - last_fall_time:
+            # solidify piece
+            if not move_piece(board, curr_piece, 0, 1):
+                add_to_board(board, curr_piece)
+                piece_placed = True
+            else:
+                last_fall_time = time.time()
 
         remove_complete_lines(board)
-
         draw_background()
         draw_board(board)
         draw_piece_shadow(board, curr_piece)
         draw_piece(curr_piece)
+        if piece_placed:
+            add_to_board(board, curr_piece)
+            curr_piece = None
+            piece_placed = False
         pygame.display.update()
         # if event_occurred:
         #     print_board_with_piece(board, curr_piece)
 
 
+# returns True if moved successfully, False otherwise
 def move_piece(board, piece, adjx, adjy):
     if is_valid_position(board, piece, adjx, adjy):
         piece['x'] += adjx
         piece['y'] += adjy
+        return True
+    return False
 
 
 def rotate_piece(board, piece, adj_rot):
