@@ -177,10 +177,9 @@ def main():
 
 
 # TO DO:
-# hold piece function
-# draw held piece and next piece
-# draw next 5 pieces
-
+# add game over screen
+# add pause screen
+# add restart keybind
 
 def run_game():
     # game setup
@@ -188,8 +187,8 @@ def run_game():
     piece_bag = list(PIECE_SHAPES.keys())
     curr_piece = get_new_piece(piece_bag)
     next_pieces = [get_new_piece(piece_bag) for _ in range(NUM_NEXT_PIECES)]
-    hold_piece = None
-    piece_held = False
+    held_piece = None
+    piece_held_this_turn = False
     swap_hold_available = True
     game_over = False
 
@@ -210,14 +209,13 @@ def run_game():
         # get next piece
         if curr_piece is None:
             curr_piece = next_pieces[0]
+            if not is_valid_position(board, curr_piece):
+                move_piece(board, curr_piece, 0, -1)
             if not piece_bag:
                 piece_bag = list(PIECE_SHAPES.keys())
             for i in range(NUM_NEXT_PIECES - 1):
                 next_pieces[i] = next_pieces[i + 1]
             next_pieces[NUM_NEXT_PIECES - 1] = get_new_piece(piece_bag)
-
-        if not is_valid_position(board, curr_piece, 0, 0):
-            game_over = True
 
         for event in pygame.event.get():
             # key pressed
@@ -272,14 +270,14 @@ def run_game():
                 elif event.key == K_c:
                     # hold piece
                     if swap_hold_available:
-                        if hold_piece is None:
-                            hold_piece = {'shape': curr_piece['shape'], 'rotation': 0,
+                        if held_piece is None:
+                            held_piece = {'shape': curr_piece['shape'], 'rotation': 0,
                                           'x': 3, 'y': 3, 'color': PIECE_COLORS[curr_piece['shape']]}
-                            piece_held = True
+                            piece_held_this_turn = True
                         else:
                             temp_piece = curr_piece
-                            curr_piece = hold_piece
-                            hold_piece = {'shape': temp_piece['shape'], 'rotation': 0,
+                            curr_piece = held_piece
+                            held_piece = {'shape': temp_piece['shape'], 'rotation': 0,
                                           'x': 3, 'y': 3, 'color': PIECE_COLORS[temp_piece['shape']]}
                         swap_hold_available = False
 
@@ -312,14 +310,25 @@ def run_game():
         draw_board(board)
         draw_piece_shadow(board, curr_piece)
         draw_piece(curr_piece)
+        draw_next_pieces(next_pieces)
+        if held_piece is not None:
+            draw_held_piece(held_piece)
         if piece_placed:
+            if not is_valid_position(board, curr_piece, 0, 0):
+                game_over = True
+                print("game over")
             add_to_board(board, curr_piece)
             curr_piece = None
             piece_placed = False
             swap_hold_available = True
-        if piece_held:
+            last_fall_time = time.time()
+            last_move_side_time = time.time()
+            last_move_side_pressed = time.time()
+            last_move_down_time = time.time()
+            print("piece placed")
+        if piece_held_this_turn:
             curr_piece = None
-            piece_held = False
+            piece_held_this_turn = False
         pygame.display.update()
         # print(game_over)
 
@@ -501,6 +510,36 @@ def draw_board(board):
                 draw_box(yrow + VISIBLE_BOARD_HEIGHT - BOARD_HEIGHT, xcol, GRID_COLOR, GRID_THICKNESS)
 
 
+def draw_next_pieces(next_pieces):
+    templates = [piece[0] for piece in PIECE_SHAPES.values()]
+    for i in range(NUM_NEXT_PIECES):
+        if next_pieces[i]['shape'] in ['L', 'J', 'S', 'Z', 'T']:
+            pixelx = X_MARGIN + (BOARD_WIDTH + 1.5) * BOX_SIZE + BORDER_THICKNESS
+            pixely = Y_MARGIN + 1 * BOX_SIZE + (max([len(template) for template in templates]) * BOX_SIZE) * i
+        elif next_pieces[i]['shape'] == 'O':
+            pixelx = X_MARGIN + (BOARD_WIDTH + 1) * BOX_SIZE + BORDER_THICKNESS
+            pixely = Y_MARGIN + 1 * BOX_SIZE + (max([len(template) for template in templates]) * BOX_SIZE) * i
+        else:
+            pixelx = X_MARGIN + (BOARD_WIDTH + 1) * BOX_SIZE + BORDER_THICKNESS
+            pixely = Y_MARGIN + 0.5 * BOX_SIZE + (max([len(template) for template in templates]) * BOX_SIZE) * i
+        draw_piece(next_pieces[i], pixely, pixelx)
+
+
+def draw_held_piece(piece):
+    templates = [piece[0] for piece in PIECE_SHAPES.values()]
+    if piece['shape'] in ['L', 'J', 'S', 'Z', 'T']:
+        pixelx = X_MARGIN - (max([len(template[0]) for template in templates]) + 0.5) * BOX_SIZE - BORDER_THICKNESS
+        pixely = Y_MARGIN + BOX_SIZE
+    elif piece['shape'] == 'O':
+        pixelx = X_MARGIN - (max([len(template[0]) for template in templates]) + 1) * BOX_SIZE - BORDER_THICKNESS
+        pixely = Y_MARGIN + BOX_SIZE
+    else:
+        pixelx = X_MARGIN - (max([len(template[0]) for template in templates]) + 1) * BOX_SIZE - BORDER_THICKNESS
+        pixely = Y_MARGIN + 0.5 * BOX_SIZE
+    draw_piece(piece, pixely, pixelx)
+
+
+
 def draw_piece(piece, pixely=None, pixelx=None):
     template = PIECE_SHAPES[piece['shape']][piece['rotation']]
     if pixely is None and pixelx is None:
@@ -516,8 +555,8 @@ def draw_piece(piece, pixely=None, pixelx=None):
         for yrow in range(len(template)):
             for xcol in range(len(template[0])):
                 if template[yrow][xcol] != BLANK:
-                    draw_box(0, 0, piece['color'], 0, pixely, pixelx)
-                    draw_box(0, 0, GRID_COLOR, GRID_THICKNESS, pixely, pixelx)
+                    draw_box(0, 0, piece['color'], 0, pixely + yrow * BOX_SIZE, pixelx + xcol * BOX_SIZE)
+                    draw_box(0, 0, GRID_COLOR, GRID_THICKNESS, pixely + yrow * BOX_SIZE, pixelx + xcol * BOX_SIZE)
 
 
 def draw_piece_shadow(board, piece):
