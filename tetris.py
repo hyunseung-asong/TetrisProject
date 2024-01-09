@@ -12,7 +12,7 @@ GRID_THICKNESS = 1
 FPS = 60
 
 BOARD_WIDTH = 10
-# VISIBLE_BOARD_HEIGHT = 20
+VISIBLE_BOARD_HEIGHT = 20
 BOARD_HEIGHT = 24
 BOX_SIZE = 20
 BLANK = 0
@@ -23,7 +23,8 @@ MOVE_DOWN_FREQ = 0.04
 FALL_FREQ = 1
 
 X_MARGIN = (WINDOW_WIDTH / 2) - (BOARD_WIDTH * BOX_SIZE / 2)
-Y_MARGIN = (WINDOW_HEIGHT / 2) - (BOARD_HEIGHT * BOX_SIZE / 2)
+Y_MARGIN = (WINDOW_HEIGHT / 2) - (VISIBLE_BOARD_HEIGHT * BOX_SIZE / 2)
+OTHER_PIECE_OFFSET = BOX_SIZE
 
 NUM_NEXT_PIECES = 5
 
@@ -176,7 +177,6 @@ def main():
 
 
 # TO DO:
-# end game conditions
 # hold piece function
 # draw held piece and next piece
 # draw next 5 pieces
@@ -188,7 +188,9 @@ def run_game():
     piece_bag = list(PIECE_SHAPES.keys())
     curr_piece = get_new_piece(piece_bag)
     next_pieces = [get_new_piece(piece_bag) for _ in range(NUM_NEXT_PIECES)]
-
+    hold_piece = None
+    piece_held = False
+    swap_hold_available = True
     game_over = False
 
     inital_move_side_done = False
@@ -202,7 +204,7 @@ def run_game():
     piece_placed = False
 
     # game loop
-    while not game_over:
+    while True:
         check_for_quit()
 
         # get next piece
@@ -213,6 +215,9 @@ def run_game():
             for i in range(NUM_NEXT_PIECES - 1):
                 next_pieces[i] = next_pieces[i + 1]
             next_pieces[NUM_NEXT_PIECES - 1] = get_new_piece(piece_bag)
+
+        if not is_valid_position(board, curr_piece, 0, 0):
+            game_over = True
 
         for event in pygame.event.get():
             # key pressed
@@ -255,6 +260,7 @@ def run_game():
                     # rotate counterclockwise
                     rotate_piece(board, curr_piece, -1)
                 elif event.key == K_SPACE:
+                    # harddrop
                     for i in range(1, BOARD_HEIGHT):
                         if not is_valid_position(board, curr_piece, adjy=i):
                             break
@@ -263,6 +269,19 @@ def run_game():
                     moving_down = False
                     moving_left = False
                     moving_right = False
+                elif event.key == K_c:
+                    # hold piece
+                    if swap_hold_available:
+                        if hold_piece is None:
+                            hold_piece = {'shape': curr_piece['shape'], 'rotation': 0,
+                                          'x': 3, 'y': 3, 'color': PIECE_COLORS[curr_piece['shape']]}
+                            piece_held = True
+                        else:
+                            temp_piece = curr_piece
+                            curr_piece = hold_piece
+                            hold_piece = {'shape': temp_piece['shape'], 'rotation': 0,
+                                          'x': 3, 'y': 3, 'color': PIECE_COLORS[temp_piece['shape']]}
+                        swap_hold_available = False
 
         # continue moving side if key is held
         if inital_move_side_done and time.time() - last_move_side_pressed > MOVE_SIDEWAYS_OFFSET:
@@ -297,9 +316,12 @@ def run_game():
             add_to_board(board, curr_piece)
             curr_piece = None
             piece_placed = False
+            swap_hold_available = True
+        if piece_held:
+            curr_piece = None
+            piece_held = False
         pygame.display.update()
-        # if event_occurred:
-        #     print_board_with_piece(board, curr_piece)
+        # print(game_over)
 
 
 # returns True if moved successfully, False otherwise
@@ -437,12 +459,29 @@ def draw_background():
                      (X_MARGIN - BORDER_THICKNESS,
                       Y_MARGIN - BORDER_THICKNESS,
                       BOARD_WIDTH * BOX_SIZE + 2 * BORDER_THICKNESS,
-                      BOARD_HEIGHT * BOX_SIZE + 2 * BORDER_THICKNESS), BORDER_THICKNESS)
+                      VISIBLE_BOARD_HEIGHT * BOX_SIZE + 2 * BORDER_THICKNESS), BORDER_THICKNESS)
 
     # draw grid
-    for yrow in range(BOARD_HEIGHT):
+    for yrow in range(VISIBLE_BOARD_HEIGHT):
         for xcol in range(BOARD_WIDTH):
             draw_box(yrow, xcol, GRID_COLOR, GRID_THICKNESS)
+
+    # draw next pieces border
+    templates = [piece[0] for piece in PIECE_SHAPES.values()]
+    pygame.draw.rect(SCREEN, BORDER_COLOR,
+                     (X_MARGIN + (BOARD_WIDTH * BOX_SIZE) + BOX_SIZE,
+                     Y_MARGIN - BORDER_THICKNESS,
+                      (max([len(template[0]) for template in templates]) * BOX_SIZE) + 2 * BORDER_THICKNESS,
+                      (max([len(template) for template in templates]) * BOX_SIZE) * 5 + 2 * BORDER_THICKNESS),
+                     BORDER_THICKNESS)
+
+    # draw hold piece border
+    pygame.draw.rect(SCREEN, BORDER_COLOR,
+                     (X_MARGIN - (max([len(template[0]) for template in templates]) + 1) * BOX_SIZE - 2 * BORDER_THICKNESS,
+                      Y_MARGIN - BORDER_THICKNESS,
+                      (max([len(template[0]) for template in templates]) * BOX_SIZE) + 2 * BORDER_THICKNESS,
+                      (max([len(template) for template in templates]) * BOX_SIZE) + 2 * BORDER_THICKNESS),
+                     BORDER_THICKNESS)
 
 
 def draw_box(yrow, xcol, color, thickness, pixely=None, pixelx=None):
@@ -455,22 +494,30 @@ def draw_box(yrow, xcol, color, thickness, pixely=None, pixelx=None):
 
 
 def draw_board(board):
-    for yrow in range(BOARD_HEIGHT):
+    for yrow in range(BOARD_HEIGHT - VISIBLE_BOARD_HEIGHT, BOARD_HEIGHT):
         for xcol in range(BOARD_WIDTH):
             if board[yrow][xcol] != BLANK:
-                draw_box(yrow, xcol, PIECE_COLORS[board[yrow][xcol]], 0)
-                draw_box(yrow, xcol, GRID_COLOR, GRID_THICKNESS)
+                draw_box(yrow + VISIBLE_BOARD_HEIGHT - BOARD_HEIGHT, xcol, PIECE_COLORS[board[yrow][xcol]], 0)
+                draw_box(yrow + VISIBLE_BOARD_HEIGHT - BOARD_HEIGHT, xcol, GRID_COLOR, GRID_THICKNESS)
 
 
 def draw_piece(piece, pixely=None, pixelx=None):
     template = PIECE_SHAPES[piece['shape']][piece['rotation']]
-    # if pixely is None and pixely is None:
-    #     pixely, pixelx = convert_to_pixel_coords(piece['y'], piece['x'])
-    for yrow in range(len(template)):
-        for xcol in range(len(template[0])):
-            if template[yrow][xcol] != BLANK:
-                draw_box(yrow + piece['y'], xcol + piece['x'], piece['color'], 0)
-                draw_box(yrow + piece['y'], xcol + piece['x'], GRID_COLOR, GRID_THICKNESS)
+    if pixely is None and pixelx is None:
+        for yrow in range(len(template)):
+            for xcol in range(len(template[0])):
+                if template[yrow][xcol] != BLANK:
+                    if yrow + piece['y'] + VISIBLE_BOARD_HEIGHT - BOARD_HEIGHT >= 0:
+                        draw_box(yrow + piece['y'] + VISIBLE_BOARD_HEIGHT - BOARD_HEIGHT,
+                                 xcol + piece['x'], piece['color'], 0)
+                        draw_box(yrow + piece['y'] + VISIBLE_BOARD_HEIGHT - BOARD_HEIGHT,
+                                 xcol + piece['x'], GRID_COLOR, GRID_THICKNESS)
+    else:
+        for yrow in range(len(template)):
+            for xcol in range(len(template[0])):
+                if template[yrow][xcol] != BLANK:
+                    draw_box(0, 0, piece['color'], 0, pixely, pixelx)
+                    draw_box(0, 0, GRID_COLOR, GRID_THICKNESS, pixely, pixelx)
 
 
 def draw_piece_shadow(board, piece):
@@ -480,12 +527,7 @@ def draw_piece_shadow(board, piece):
     shadow = {'shape': piece['shape'], 'rotation': piece['rotation'],
               'x': piece['x'], 'y': piece['y'] + i - 1, 'color': SHADOW_COLORS[piece['shape']]}
     shadow['color'] = shadow['color'].premul_alpha()
-    template = PIECE_SHAPES[shadow['shape']][shadow['rotation']]
-    for yrow in range(len(template)):
-        for xcol in range(len(template[0])):
-            if template[yrow][xcol] != BLANK:
-                draw_box(yrow + shadow['y'], xcol + shadow['x'], shadow['color'], 0)
-                draw_box(yrow + shadow['y'], xcol + shadow['x'], GRID_COLOR, GRID_THICKNESS)
+    draw_piece(shadow)
 
 
 def convert_to_pixel_coords(y, x):
