@@ -1,11 +1,25 @@
 import random, time, pygame, sys
 from pygame.locals import *
 
+KEYBINDS = {'move_left': K_LEFT,
+            'move_right': K_RIGHT,
+            'softdrop': K_DOWN,
+            'harddrop': K_SPACE,
+            'rotate_left': K_z,
+            'rotate_right': K_UP,
+            'hold': K_LSHIFT,
+            'pause': K_p,
+            'restart': K_r}
+
 WINDOW_WIDTH = 500
 WINDOW_HEIGHT = 700
 BACKGROUND_COLOR = "BLACK"
 BORDER_COLOR = "WHITE"
-GRID_COLOR = "GRAY30"
+GRID_COLOR = "GRAY10"
+FONT_SIZE = 36
+TEXT_FONT = "Montserrat-Medium.ttf"
+FONT_COLOR = "YELLOW2"
+FONT_BACKGROUND_COLOR = "GRAY40"
 
 BORDER_THICKNESS = 5
 GRID_THICKNESS = 1
@@ -20,7 +34,8 @@ BLANK = 0
 MOVE_SIDEWAYS_OFFSET = 0.15
 MOVE_SIDEWAYS_FREQ = 0.04
 MOVE_DOWN_FREQ = 0.04
-FALL_FREQ = 1
+FALL_FREQ = 1.5
+READY_SCREEN_TIMER = 1
 
 X_MARGIN = (WINDOW_WIDTH / 2) - (BOARD_WIDTH * BOX_SIZE / 2)
 Y_MARGIN = (WINDOW_HEIGHT / 2) - (VISIBLE_BOARD_HEIGHT * BOX_SIZE / 2)
@@ -171,27 +186,30 @@ WALLKICK_I = [
 def main():
     global CLOCK, SCREEN
     pygame.init()
+    pygame.font.init()
     SCREEN = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
     CLOCK = pygame.time.Clock()
-    run_game()
+    if run_game():
+        main()
 
-
-# TO DO:
-# add game over screen
-# add pause screen
-# add restart keybind
 
 def run_game():
     # game setup
     board = new_board()
     piece_bag = list(PIECE_SHAPES.keys())
-    curr_piece = get_new_piece(piece_bag)
+    # curr_piece = get_new_piece(piece_bag)
+    curr_piece = None
     next_pieces = [get_new_piece(piece_bag) for _ in range(NUM_NEXT_PIECES)]
     held_piece = None
     piece_held_this_turn = False
     swap_hold_available = True
     game_over = False
+    ready_go_screen = True
+    draw_ready = False
+    draw_go = False
+    ready_screen_time = time.time()
 
+    paused = False
     inital_move_side_done = False
     last_move_down_time = time.time()
     last_move_side_time = time.time()
@@ -206,131 +224,159 @@ def run_game():
     while True:
         check_for_quit()
 
-        # get next piece
-        if curr_piece is None:
-            curr_piece = next_pieces[0]
-            if not is_valid_position(board, curr_piece):
-                move_piece(board, curr_piece, 0, -1)
-            if not piece_bag:
-                piece_bag = list(PIECE_SHAPES.keys())
-            for i in range(NUM_NEXT_PIECES - 1):
-                next_pieces[i] = next_pieces[i + 1]
-            next_pieces[NUM_NEXT_PIECES - 1] = get_new_piece(piece_bag)
+        if not game_over:
 
-        for event in pygame.event.get():
-            # key pressed
-            if event.type == KEYUP:
-                if event.key == K_LEFT:
-                    moving_left = False
-                    inital_move_side_done = False
-                elif event.key == K_RIGHT:
-                    moving_right = False
-                    inital_move_side_done = False
-                elif event.key == K_DOWN:
-                    moving_down = False
-            elif event.type == KEYDOWN:
+            if not ready_go_screen:
+                # get next piece
+                if curr_piece is None:
+                    curr_piece = next_pieces[0]
+                    if not is_valid_position(board, curr_piece):
+                        move_piece(board, curr_piece, 0, -1)
+                    if not piece_bag:
+                        piece_bag = list(PIECE_SHAPES.keys())
+                    for i in range(NUM_NEXT_PIECES - 1):
+                        next_pieces[i] = next_pieces[i + 1]
+                    next_pieces[NUM_NEXT_PIECES - 1] = get_new_piece(piece_bag)
 
-                if event.key == K_LEFT:
-                    move_piece(board, curr_piece, -1, 0)
-                    moving_left = True
-                    moving_right = False
-                    last_move_side_time = time.time()
-                    last_move_side_pressed = time.time()
-                    if not inital_move_side_done:
-                        inital_move_side_done = True
-                        last_move_side_pressed = time.time()
-                elif event.key == K_RIGHT:
-                    move_piece(board, curr_piece, 1, 0)
-                    moving_left = False
-                    moving_right = True
-                    last_move_side_time = time.time()
-                    if not inital_move_side_done:
-                        inital_move_side_done = True
-                        last_move_side_pressed = time.time()
-                elif event.key == K_DOWN:
-                    move_piece(board, curr_piece, 0, 1)
-                    moving_down = True
-                    last_move_down_time = time.time()
-                elif event.key == K_UP:
-                    # rotate clockwise
-                    rotate_piece(board, curr_piece, 1)
-                elif event.key == K_z:
-                    # rotate counterclockwise
-                    rotate_piece(board, curr_piece, -1)
-                elif event.key == K_SPACE:
-                    # harddrop
-                    for i in range(1, BOARD_HEIGHT):
-                        if not is_valid_position(board, curr_piece, adjy=i):
-                            break
-                    curr_piece['y'] += i - 1
-                    piece_placed = True
-                    moving_down = False
-                    moving_left = False
-                    moving_right = False
-                elif event.key == K_c:
-                    # hold piece
-                    if swap_hold_available:
-                        if held_piece is None:
-                            held_piece = {'shape': curr_piece['shape'], 'rotation': 0,
-                                          'x': 3, 'y': 3, 'color': PIECE_COLORS[curr_piece['shape']]}
-                            piece_held_this_turn = True
+                for event in pygame.event.get():
+                    # key pressed
+                    if event.type == KEYUP:
+                        if event.key == KEYBINDS['move_left']:
+                            moving_left = False
+                            inital_move_side_done = False
+                        elif event.key == KEYBINDS['move_right']:
+                            moving_right = False
+                            inital_move_side_done = False
+                        elif event.key == KEYBINDS['softdrop']:
+                            moving_down = False
+                    elif event.type == KEYDOWN:
+                        if not paused:
+                            if event.key == KEYBINDS['move_left']:
+                                move_piece(board, curr_piece, -1, 0)
+                                moving_left = True
+                                last_move_side_time = time.time()
+                                if not inital_move_side_done:
+                                    inital_move_side_done = True
+                                    last_move_side_pressed = time.time()
+                            elif event.key == KEYBINDS['move_right']:
+                                move_piece(board, curr_piece, 1, 0)
+                                moving_right = True
+                                if not inital_move_side_done:
+                                    inital_move_side_done = True
+                                    last_move_side_pressed = time.time()
+                            elif event.key == KEYBINDS['softdrop']:
+                                move_piece(board, curr_piece, 0, 1)
+                                moving_down = True
+                                last_move_down_time = time.time()
+                            elif event.key == KEYBINDS['rotate_right']:
+                                rotate_piece(board, curr_piece, 1)
+                            elif event.key == KEYBINDS['rotate_left']:
+                                rotate_piece(board, curr_piece, -1)
+                            elif event.key == KEYBINDS['harddrop']:
+                                for i in range(1, BOARD_HEIGHT):
+                                    if not is_valid_position(board, curr_piece, adjy=i):
+                                        break
+                                curr_piece['y'] += i - 1
+                                piece_placed = True
+                                moving_down = False
+                                moving_left = False
+                                moving_right = False
+                            elif event.key == KEYBINDS['hold']:
+                                if swap_hold_available:
+                                    if held_piece is None:
+                                        held_piece = {'shape': curr_piece['shape'], 'rotation': 0,
+                                                      'x': 3, 'y': 3, 'color': PIECE_COLORS[curr_piece['shape']]}
+                                        piece_held_this_turn = True
+                                    else:
+                                        temp_piece = curr_piece
+                                        curr_piece = held_piece
+                                        held_piece = {'shape': temp_piece['shape'], 'rotation': 0,
+                                                      'x': 3, 'y': 3, 'color': PIECE_COLORS[temp_piece['shape']]}
+                                    swap_hold_available = False
+                        if event.key == KEYBINDS['pause']:
+                            paused = not paused
+                        elif event.key == KEYBINDS['restart']:
+                            # restart game
+                            return True
+
+                if not paused:
+                    # continue moving side if key is held
+                    if inital_move_side_done and time.time() - last_move_side_pressed > MOVE_SIDEWAYS_OFFSET:
+                        if (moving_left or moving_right) and time.time() - last_move_side_time > MOVE_SIDEWAYS_FREQ:
+                            if moving_left:
+                                move_piece(board, curr_piece, -1, 0)
+                            elif moving_right:
+                                move_piece(board, curr_piece, 1, 0)
+                            last_move_side_time = time.time()
+
+                    # continue moving down if key is held (softdrop)
+                    if moving_down and time.time() - last_move_down_time > MOVE_DOWN_FREQ:
+                        move_piece(board, curr_piece, 0, 1)
+                        last_move_down_time = time.time()
+                        last_fall_time = time.time()
+
+                    # let piece fall naturally
+                    if FALL_FREQ < time.time() - last_fall_time:
+                        # solidify piece
+                        if is_valid_position(board, curr_piece, 0, 1):
+                            curr_piece['y'] += 1
+                            last_fall_time = time.time()
                         else:
-                            temp_piece = curr_piece
-                            curr_piece = held_piece
-                            held_piece = {'shape': temp_piece['shape'], 'rotation': 0,
-                                          'x': 3, 'y': 3, 'color': PIECE_COLORS[temp_piece['shape']]}
-                        swap_hold_available = False
-
-        # continue moving side if key is held
-        if inital_move_side_done and time.time() - last_move_side_pressed > MOVE_SIDEWAYS_OFFSET:
-            if (moving_left or moving_right) and time.time() - last_move_side_time > MOVE_SIDEWAYS_FREQ:
-                if moving_left:
-                    move_piece(board, curr_piece, -1, 0)
-                elif moving_right:
-                    move_piece(board, curr_piece, 1, 0)
-                last_move_side_time = time.time()
-
-        # continue moving down if key is held (softdrop)
-        if moving_down and time.time() - last_move_down_time > MOVE_DOWN_FREQ:
-            move_piece(board, curr_piece, 0, 1)
-            last_move_down_time = time.time()
-            last_fall_time = time.time()
-
-        # let piece fall naturally
-        if FALL_FREQ < time.time() - last_fall_time:
-            # solidify piece
-            if not move_piece(board, curr_piece, 0, 1):
-                add_to_board(board, curr_piece)
-                piece_placed = True
+                            piece_placed = True
+                            moving_down = False
+                            moving_left = False
+                            moving_right = False
             else:
-                last_fall_time = time.time()
+                if READY_SCREEN_TIMER > time.time() - ready_screen_time:
+                    # ready_screen
+                    draw_ready = True
+                elif READY_SCREEN_TIMER * 2 > time.time() - ready_screen_time:
+                    # go screen
+                    draw_go = True
+                    draw_ready = False
+                else:
+                    draw_ready = False
+                    draw_go = False
+                    ready_go_screen = False
 
-        remove_complete_lines(board)
-        draw_background()
-        draw_board(board)
-        draw_piece_shadow(board, curr_piece)
-        draw_piece(curr_piece)
-        draw_next_pieces(next_pieces)
-        if held_piece is not None:
-            draw_held_piece(held_piece)
-        if piece_placed:
-            if not is_valid_position(board, curr_piece, 0, 0):
-                game_over = True
-                print("game over")
-            add_to_board(board, curr_piece)
-            curr_piece = None
-            piece_placed = False
-            swap_hold_available = True
-            last_fall_time = time.time()
-            last_move_side_time = time.time()
-            last_move_side_pressed = time.time()
-            last_move_down_time = time.time()
-            print("piece placed")
-        if piece_held_this_turn:
-            curr_piece = None
-            piece_held_this_turn = False
-        pygame.display.update()
-        # print(game_over)
+            remove_complete_lines(board)
+
+            # "erase" everything
+            SCREEN.fill(BACKGROUND_COLOR)
+            draw_background()
+            draw_board(board)
+
+            if curr_piece is not None:
+                draw_piece_shadow(board, curr_piece)
+                draw_piece(curr_piece)
+            if next_pieces is not None:
+                draw_next_pieces(next_pieces)
+            if held_piece is not None:
+                draw_held_piece(held_piece)
+            if piece_placed:
+                if not is_valid_position(board, curr_piece, 0, 0):
+                    game_over = True
+                    print("gg")
+                add_to_board(board, curr_piece)
+                curr_piece = None
+                piece_placed = False
+                swap_hold_available = True
+                last_fall_time = time.time()
+                last_move_side_time = time.time()
+                last_move_side_pressed = time.time()
+                last_move_down_time = time.time()
+            if piece_held_this_turn:
+                curr_piece = None
+                piece_held_this_turn = False
+
+            if draw_ready:
+                draw_text("READY", TEXT_FONT, FONT_SIZE, FONT_COLOR, FONT_BACKGROUND_COLOR)
+            if draw_go:
+                draw_text("GO!", TEXT_FONT, FONT_SIZE, FONT_COLOR, FONT_BACKGROUND_COLOR)
+            if paused:
+                draw_text("PAUSED", TEXT_FONT, FONT_SIZE, FONT_COLOR, FONT_BACKGROUND_COLOR)
+
+            pygame.display.update()
 
 
 # returns True if moved successfully, False otherwise
@@ -342,6 +388,7 @@ def move_piece(board, piece, adjx, adjy):
     return False
 
 
+# rotates piece based on current position and rotation while allowing for wall kicks
 def rotate_piece(board, piece, adj_rot):
     # 0 = 0, 1 = R, 2 = 2, 3 = L
     len_rots = len(PIECE_SHAPES[piece['shape']])
@@ -393,6 +440,7 @@ def rotate_piece(board, piece, adj_rot):
             piece['y'] += testy
 
 
+# returns true if the given position with adjusted x and y is within the board
 def is_valid_position(board, piece, adjx=0, adjy=0):
     template = PIECE_SHAPES[piece['shape']][piece['rotation']]
     for yrow in range(len(template)):
@@ -409,6 +457,7 @@ def is_valid_position(board, piece, adjx=0, adjy=0):
     return True
 
 
+# removes any complete lines and pushes down the rest of the board
 def remove_complete_lines(board):
     num_removed_lines = 0
     yrow = BOARD_HEIGHT - 1
@@ -425,6 +474,7 @@ def remove_complete_lines(board):
     return num_removed_lines
 
 
+# returns true if the given row is full
 def is_complete_line(board, yrow):
     for xcol in range(BOARD_WIDTH):
         if board[yrow][xcol] == BLANK:
@@ -432,11 +482,12 @@ def is_complete_line(board, yrow):
     return True
 
 
+# returns true if given x y is within the board
 def is_on_board(yrow, xcol):
     return 0 <= xcol < BOARD_WIDTH and yrow < BOARD_HEIGHT
 
 
-# solidifies the falling piece onto the current board state
+# solidifies a piece onto the current board state
 def add_to_board(board, piece):
     template = PIECE_SHAPES[piece['shape']][piece['rotation']]
     for yrow in range(len(template)):
@@ -460,9 +511,23 @@ def new_board():
     return board
 
 
+# draws text near the center of the playfield unless specified otherwise
+def draw_text(text, font, size, color, background_color, pixely=None, pixelx=None):
+    if pixely is None and pixelx is None:
+        new_font = pygame.font.Font(font, size)
+        text_surface = new_font.render(text, True, color, background_color)
+        pygame.draw.rect(SCREEN, FONT_BACKGROUND_COLOR,
+                         (X_MARGIN,
+                          Y_MARGIN + VISIBLE_BOARD_HEIGHT / 2 * BOX_SIZE,
+                          BOARD_WIDTH * BOX_SIZE,
+                          3 * BOX_SIZE), 0)
+        SCREEN.blit(text_surface,
+                    (X_MARGIN + BOARD_WIDTH / 2 * BOX_SIZE - text_surface.get_width() / 2,
+                     Y_MARGIN + VISIBLE_BOARD_HEIGHT / 2 * BOX_SIZE + 3 / 2 * BOX_SIZE - text_surface.get_height() / 2))
+
+
+# erases and draws the border for playfield, held, and next pieces. also draws the grid within the playfield
 def draw_background():
-    # "erase" everything
-    SCREEN.fill(BACKGROUND_COLOR)
     # draw playfield border
     pygame.draw.rect(SCREEN, BORDER_COLOR,
                      (X_MARGIN - BORDER_THICKNESS,
@@ -479,20 +544,22 @@ def draw_background():
     templates = [piece[0] for piece in PIECE_SHAPES.values()]
     pygame.draw.rect(SCREEN, BORDER_COLOR,
                      (X_MARGIN + (BOARD_WIDTH * BOX_SIZE) + BOX_SIZE,
-                     Y_MARGIN - BORDER_THICKNESS,
+                      Y_MARGIN - BORDER_THICKNESS,
                       (max([len(template[0]) for template in templates]) * BOX_SIZE) + 2 * BORDER_THICKNESS,
                       (max([len(template) for template in templates]) * BOX_SIZE) * 5 + 2 * BORDER_THICKNESS),
                      BORDER_THICKNESS)
 
     # draw hold piece border
     pygame.draw.rect(SCREEN, BORDER_COLOR,
-                     (X_MARGIN - (max([len(template[0]) for template in templates]) + 1) * BOX_SIZE - 2 * BORDER_THICKNESS,
+                     (X_MARGIN - (max([len(template[0]) for template in
+                                       templates]) + 1) * BOX_SIZE - 2 * BORDER_THICKNESS,
                       Y_MARGIN - BORDER_THICKNESS,
                       (max([len(template[0]) for template in templates]) * BOX_SIZE) + 2 * BORDER_THICKNESS,
                       (max([len(template) for template in templates]) * BOX_SIZE) + 2 * BORDER_THICKNESS),
                      BORDER_THICKNESS)
 
 
+# draws a box given either a x,y within the playfield or the specified pixel x y coordinates
 def draw_box(yrow, xcol, color, thickness, pixely=None, pixelx=None):
     if pixely is None and pixelx is None:
         pixely, pixelx = convert_to_pixel_coords(yrow, xcol)
@@ -502,6 +569,7 @@ def draw_box(yrow, xcol, color, thickness, pixely=None, pixelx=None):
     pygame.draw.rect(SCREEN, color, (pixelx, pixely, BOX_SIZE, BOX_SIZE), thickness)
 
 
+# draws the current playfield
 def draw_board(board):
     for yrow in range(BOARD_HEIGHT - VISIBLE_BOARD_HEIGHT, BOARD_HEIGHT):
         for xcol in range(BOARD_WIDTH):
@@ -510,6 +578,7 @@ def draw_board(board):
                 draw_box(yrow + VISIBLE_BOARD_HEIGHT - BOARD_HEIGHT, xcol, GRID_COLOR, GRID_THICKNESS)
 
 
+# draws the next NUM_NEXT_PIECES pieces within its border
 def draw_next_pieces(next_pieces):
     templates = [piece[0] for piece in PIECE_SHAPES.values()]
     for i in range(NUM_NEXT_PIECES):
@@ -525,6 +594,7 @@ def draw_next_pieces(next_pieces):
         draw_piece(next_pieces[i], pixely, pixelx)
 
 
+# draws the held piece within the held piece border
 def draw_held_piece(piece):
     templates = [piece[0] for piece in PIECE_SHAPES.values()]
     if piece['shape'] in ['L', 'J', 'S', 'Z', 'T']:
@@ -539,7 +609,7 @@ def draw_held_piece(piece):
     draw_piece(piece, pixely, pixelx)
 
 
-
+# draws a piece given its x y or pixel x y positions
 def draw_piece(piece, pixely=None, pixelx=None):
     template = PIECE_SHAPES[piece['shape']][piece['rotation']]
     if pixely is None and pixelx is None:
@@ -559,6 +629,7 @@ def draw_piece(piece, pixely=None, pixelx=None):
                     draw_box(0, 0, GRID_COLOR, GRID_THICKNESS, pixely + yrow * BOX_SIZE, pixelx + xcol * BOX_SIZE)
 
 
+# draws the shadow of a piece where the piece would be harddropped to
 def draw_piece_shadow(board, piece):
     for i in range(1, BOARD_HEIGHT):
         if not is_valid_position(board, piece, adjy=i):
@@ -569,10 +640,12 @@ def draw_piece_shadow(board, piece):
     draw_piece(shadow)
 
 
+# converts the row, col of the board into pixel coordinates on the screen
 def convert_to_pixel_coords(y, x):
     return Y_MARGIN + y * BOX_SIZE, X_MARGIN + x * BOX_SIZE
 
 
+# prints the state of the board in the console
 def print_board(board):
     print("----------------------------------------------------")
     for yrow in range(len(board)):
@@ -585,6 +658,7 @@ def print_board(board):
         print(row)
 
 
+# prints the state of the board with a given piece in the console
 def print_board_with_piece(board, piece):
     template = PIECE_SHAPES[piece['shape']][piece['rotation']]
 
@@ -608,11 +682,13 @@ def print_board_with_piece(board, piece):
         print(row)
 
 
+# checks for the X button pressed in the pygame window
 def check_for_quit():
     for event in pygame.event.get(QUIT):
         terminate()
 
 
+# closes the pygame and running program
 def terminate():
     pygame.quit()
     sys.exit()
