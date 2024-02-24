@@ -110,25 +110,6 @@ export const PIECE_SHAPES = {
     'O': O_PIECE
 };
 
-// export const PIECE_COLORS = {
-//     'I': Color(0, 255, 255, 255),
-//     'T': Color(128, 0, 128, 255),
-//     'L': Color(255, 165, 0, 255),
-//     'J': Color(0, 0, 255, 255),
-//     'Z': Color(255, 0, 0, 255),
-//     'S': Color(0, 255, 0, 255),
-//     'O': Color(255, 255, 0, 255)
-// };
-
-// export const SHADOW_COLORS = {
-//     'I': Color(0, 255, 255, 150),
-//     'T': Color(128, 0, 128, 150),
-//     'L': Color(255, 165, 0, 150),
-//     'J': Color(0, 0, 255, 150),
-//     'Z': Color(255, 0, 0, 150),
-//     'S': Color(0, 255, 0, 150),
-//     'O': Color(255, 255, 0, 150)
-// };
 
 export const WALLKICK_JLSTZ = [
     [(0, 0), (-1, 0), (-1, +1), (0, -2), (-1, -2)],  // 0->R   0->1

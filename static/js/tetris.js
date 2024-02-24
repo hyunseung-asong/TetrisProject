@@ -1,19 +1,13 @@
 import * as Pieces from './pieces.js';
 import * as Config from './config.js';
 
+let canvas;
+let ctx;
 window.addEventListener('load', () => {
-    console.log("windowe");
-    const canvas = document.getElementById('gameCanvas');
-    // const ctx = canvas.getContext('2d');
-    // ctx.fillStyle = '#0095DD';
-    // // Draw a rectangle
-    // ctx.fillRect(20, 40, 50, 50);
-    // Set the fill color
-
+    canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
     canvas.focus();
-
     addKeyEventListeners(canvas);
-
     canvas.addEventListener("click", () => {
         console.log("clicked");
         canvas.focus();
@@ -34,7 +28,6 @@ let now;
 let then;
 let interval;
 let delta;
-let count;
 
 let board;
 let piece_bag;
@@ -104,7 +97,6 @@ function init() {
     then = Date.now();
     interval = 1000 / FPS;
     delta = 0;
-    count = 0;
     requestAnimationFrame(update);
 }
 
@@ -126,6 +118,9 @@ function update() {
     now = Date.now();
     delta = now - then;
     if (delta > interval) {
+        // ctx.fillStyle = '#0095DD';
+        // // Draw a rectangle
+        // ctx.fillRect(20, 40, 50, 50);
         then = now - (delta % interval);
         // Runs this FPS times per 1 sec
         // check_for_quit();
@@ -146,7 +141,7 @@ function update() {
 
                 if (!paused) {
                     // continue moving side if key is held
-                    if (inital_move_side_done && now - last_move_side_time > Config.MOVE_SIDEWAYS_OFFSET) {
+                    if (inital_move_side_done && now - last_move_side_pressed > Config.MOVE_SIDEWAYS_OFFSET) {
                         if ((moving_left || moving_right) && now - last_move_side_time > Config.MOVE_SIDEWAYS_FREQ) {
                             if (moving_left) {
                                 move_piece(board, curr_piece, -1, 0);
@@ -331,13 +326,15 @@ function addKeyEventListeners(canvas) {
                             if (swap_hold_avail) {
                                 if (held_piece == null) {
                                     held_piece = {
-                                        'shape': curr_piece['shape'], 'rotation': 0, 'x': 3, 'y': 3
+                                        'shape': curr_piece['shape'], 'rotation': 0, 'x': 3, 'y': 3, 'color': curr_piece['color']
                                     };
                                     piece_held_this_turn = true;
                                 } else {
                                     temp_piece = curr_piece;
                                     curr_piece = held_piece;
-                                    held_piece = { 'shape': temp_piece['shape'], 'rotation': 0, 'x': 3, 'y': 3 };
+                                    held_piece = {
+                                        'shape': temp_piece['shape'], 'rotation': 0, 'x': 3, 'y': 3, 'color': temp_piece['color']
+                                    };
                                 }
                                 swap_hold_avail = false;
                             }
@@ -372,7 +369,9 @@ function move_piece(board, piece, adjx, adjy) {
 function rotate_piece(board, piece, adj_rot) {
     let len_rots = Pieces.PIECE_SHAPES[piece['shape']].length;
     let rot1 = piece['rotation'];
-    let rot2 = piece['rotation'] + adj_rot % len_rots;
+    // % operator is "bugged" with negative numbers, need workaround
+    // let rot2 = (piece['rotation'] + adj_rot) % len_rots;
+    let rot2 = (((piece['rotation'] + adj_rot) % len_rots) + len_rots) % len_rots;
     let i = -1;
     if (rot1 == 0 && rot2 == 1) {
         i = 0;
@@ -429,24 +428,29 @@ function rotate_piece(board, piece, adj_rot) {
 
 // returns true if the given position with adjx and y is within the board
 function is_valid_position(board, piece, adjx = 0, adjy = 0) {
-    let template = Pieces.PIECE_SHAPES[piece['shape']][piece['rotation']];
-    for (let yrow = 0; yrow < template.length; yrow++) {
-        for (let xcol = 0; xcol < template[0].length; xcol++) {
-            let piece_x = xcol + piece['x'] + adjx;
-            let piece_y = yrow + piece['y'] + adjy;
-            let is_above_board = piece_y < 0;
-            if (is_above_board || template[yrow][xcol] == BLANK) {
-                continue;
-            }
-            if (!is_on_board(piece_y, piece_x)) {
-                return false;
-            }
-            if (board[piece_y][piece_x] != BLANK) {
-                return false;
+    try {
+        let template = Pieces.PIECE_SHAPES[piece['shape']][piece['rotation']];
+        for (let yrow = 0; yrow < template.length; yrow++) {
+            for (let xcol = 0; xcol < template[0].length; xcol++) {
+                let piece_x = xcol + piece['x'] + adjx;
+                let piece_y = yrow + piece['y'] + adjy;
+                let is_above_board = piece_y < 0;
+                if (is_above_board || template[yrow][xcol] == BLANK) {
+                    continue;
+                }
+                if (!is_on_board(piece_y, piece_x)) {
+                    return false;
+                }
+                if (board[piece_y][piece_x] != BLANK) {
+                    return false;
+                }
             }
         }
+        return true;
+    } catch (e) {
+        console.error(board);
+        console.error(piece);
     }
-    return true;
 }
 
 
@@ -510,7 +514,7 @@ function get_new_piece(piece_bag) {
     if (index > -1) { // only splice array when item is found
         piece_bag.splice(index, 1); // 2nd parameter means remove one item only
     }
-    let new_piece = { 'shape': shape, 'rotation': 0, 'x': 3, 'y': 3 };//, 'color': Pieces.PIECE_COLORS[shape]};
+    let new_piece = { 'shape': shape, 'rotation': 0, 'x': 3, 'y': 3, 'color': Pieces.PIECE_COLORS[shape] };
     return new_piece;
 }
 
@@ -530,7 +534,7 @@ function new_board() {
 // draw text
 
 // draw background
-
+// function draw_background()
 
 // draw box
 
