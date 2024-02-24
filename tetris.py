@@ -349,6 +349,7 @@ def run_game():
             if curr_piece is not None:
                 draw_piece_shadow(board, curr_piece)
                 draw_piece(curr_piece)
+                print_board_with_piece(board, curr_piece)
             if next_pieces is not None:
                 draw_next_pieces(next_pieces)
             if held_piece is not None:
