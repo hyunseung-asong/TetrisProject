@@ -1,16 +1,20 @@
 import * as Pieces from './pieces.js';
 import * as Config from './config.js';
 
-const maindiv = document.getElementById('main');
-const bgCanvas = document.getElementById('bgCanvas');
+const maindiv = document.getElementById("main");
+const bgCanvas = document.getElementById("bgCanvas");
 const bgctx = bgCanvas.getContext("2d");
-const gameCanvas = document.getElementById('gameCanvas');
+const gameCanvas = document.getElementById("gameCanvas");
 const gamectx = gameCanvas.getContext("2d");
-const holdCanvas = document.getElementById('holdCanvas');
+const holdCanvas = document.getElementById("holdCanvas");
 const holdctx = holdCanvas.getContext("2d");
-const queueCanvas = document.getElementById('queueCanvas');
+const queueCanvas = document.getElementById("queueCanvas");
 const queuectx = queueCanvas.getContext("2d");
-
+// draw_box(0, 0, Config.PIECE_COLORS['I']);
+// draw_box(1, 0, Config.PIECE_COLORS['I']);
+// draw_box(0, 1, Config.PIECE_COLORS['I']);
+// draw_box(1, 1, Config.PIECE_COLORS['I']);
+// draw_box(2, 2, Config.PIECE_COLORS['I']);
 window.addEventListener('load', () => {
 
     maindiv.focus();
@@ -56,6 +60,8 @@ init();
 // Game initialization
 function init() {
     // board state variables
+    draw_bg();
+
     board = new_board();
     piece_bag = Object.keys(Pieces.PIECE_SHAPES);
     curr_piece = null;
@@ -167,30 +173,24 @@ function update() {
             }
 
             remove_complete_lines(board);
-
-            // "erase" screen
-            // SCREEN.fill(BACKGROUND_COLOR)
-
-            draw_background();
-            // draw_board(board);
+            erase_board();
+            draw_board(board);
             if (curr_piece != null) {
-                print_board_with_piece(board, curr_piece);
-                // draw_piece_shadow(board, curr_piece);
-                // draw_piece(curr_piece);
+                draw_piece_shadow(board, curr_piece);
+                draw_piece(curr_piece);
             } else {
                 print_board(board);
             }
             if (next_pieces != null) {
-                // draw_next_pieces(next_pieces);
+                draw_next_pieces(next_pieces);
             }
             if (held_piece != null) {
-                // draw_held_piece(held_piece);
+                draw_held_piece(held_piece);
             }
             if (piece_placed) {
                 if (!is_valid_position(board, curr_piece, 0, 0)) {
                     game_over = true;
-                    console.log("gg");
-                    print_board(board);
+                    // console.log("gg");
                 } else {
                     add_to_board(board, curr_piece);
                     curr_piece = null;
@@ -301,7 +301,7 @@ function addKeyEventListeners() {
                                     };
                                     piece_held_this_turn = true;
                                 } else {
-                                    temp_piece = curr_piece;
+                                    let temp_piece = curr_piece;
                                     curr_piece = held_piece;
                                     held_piece = {
                                         'shape': temp_piece['shape'], 'rotation': 0, 'x': 3, 'y': 3, 'color': temp_piece['color']
@@ -510,22 +510,86 @@ function new_board() {
 // draw text
 
 // draw background
-function draw_background() {
+function draw_bg() {
+    bgctx.lineWidth = 1;
+    // Draw gridlines
+    bgctx.strokeStyle = Config.GRID_SHADOW;
+    bgctx.beginPath();
+    // Vertical lines
+    for (let x = 0; x <= Config.BOARD_WIDTH; x++) {
+        bgctx.moveTo(x * Config.BOX_SIZE + 0.5, 0.5);
+        bgctx.lineTo(x * Config.BOX_SIZE + 0.5, bgCanvas.height + 0.5);
+    }
+    // Horizontal lines
+    for (let y = 0; y <= Config.VISIBLE_BOARD_HEIGHT; y++) {
+        bgctx.moveTo(0.5, y * Config.BOX_SIZE + 0.5);
+        bgctx.lineTo(bgCanvas.width + 0.5, y * Config.BOX_SIZE + 0.5);
+    }
+    bgctx.stroke();
+
+    bgctx.setLineDash([Config.BOX_SIZE*5/12, Config.BOX_SIZE*7/12])
+    bgctx.strokeStyle = Config.GRID_HIGHLIGHT;
+    bgctx.lineDashOffset = Config.BOX_SIZE*5/26;
+    bgctx.stroke();
 
 }
 
+
 // draw box
+function draw_box(yrow, xcol, color){
+    gamectx.fillStyle = color;
+    gamectx.fillRect(xcol * Config.BOX_SIZE + 1, yrow * Config.BOX_SIZE + 1, Config.BOX_SIZE - 1, Config.BOX_SIZE - 1);
+}
+
+function erase_board(){
+    gamectx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+}
 
 // draw board
 
+function draw_board(board){
+    for(let yrow = Config.BOARD_HEIGHT - Config.VISIBLE_BOARD_HEIGHT; yrow < Config.BOARD_HEIGHT; yrow++){
+        for(let xcol = 0; xcol < Config.BOARD_WIDTH; xcol++){
+            if(board[yrow][xcol] != Config.BLANK){
+                draw_box(yrow + Config.VISIBLE_BOARD_HEIGHT - Config.BOARD_HEIGHT, xcol, Config.PIECE_COLORS[board[yrow][xcol]]);
+            }
+        }
+    }
+}
 
 // draw next pieces
+function draw_next_pieces(next_pieces){
 
+}
 // draw held pieces
-
+function draw_held_piece(piece){
+    
+}
 // draw piece
-
+function draw_piece(piece){
+    const template = Pieces.PIECE_SHAPES[piece['shape']][piece['rotation']];
+    for(let yrow = 0; yrow < template.length; yrow++){
+        for(let xcol = 0; xcol < template[0].length; xcol++){
+            if(template[yrow][xcol] != Config.BLANK){
+                if (yrow + piece['y'] + Config.VISIBLE_BOARD_HEIGHT - Config.BOARD_HEIGHT >= 0){
+                    draw_box(yrow + piece['y'] + Config.VISIBLE_BOARD_HEIGHT - Config.BOARD_HEIGHT, xcol + piece['x'], piece['color']);
+                }
+            }
+        }
+    }
+}
 // draw piece shadow
+function draw_piece_shadow(board, piece){
+    let i;
+    for(i = 1; i < Config.BOARD_HEIGHT; i++){
+        if(!is_valid_position(board, piece, 0, i)){
+            break;
+        }
+    }
+    let shadow = {'shape': piece['shape'], 'rotation': piece['rotation'],
+              'x': piece['x'], 'y': piece['y'] + i - 1, 'color': Config.SHADOW_COLORS[piece['shape']]};
+    draw_piece(shadow);
+}
 
 // convert to pixel coords
 

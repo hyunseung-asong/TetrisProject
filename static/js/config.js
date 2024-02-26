@@ -41,28 +41,18 @@ export const
         'O': 'rgba(255, 255, 0, 1)'
     },
     SHADOW_COLORS = {
-        'I': 'rgba(0, 255, 255, 0.6)',
-        'T': 'rgba(128, 0, 128, 0.6)',
-        'L': 'rgba(255, 165, 0, 0.6)',
-        'J': 'rgba(0, 0, 255, 0.6)',
-        'Z': 'rgba(255, 0, 0, 0.6)',
-        'S': 'rgba(0, 255, 0, 0.6)',
-        'O': 'rgba(255, 255, 0, 0.6)'
+        'I': 'rgba(0, 255, 255, 0.45)',
+        'T': 'rgba(128, 0, 128, 0.45)',
+        'L': 'rgba(255, 165, 0, 0.45)',
+        'J': 'rgba(0, 0, 255, 0.45)',
+        'Z': 'rgba(255, 0, 0, 0.45)',
+        'S': 'rgba(0, 255, 0, 0.45)',
+        'O': 'rgba(255, 255, 0, 0.45)'
     },
 
-    GRID_HIGHLIGHT = 'rgba(155, 155, 155, 1)',
-    GRID_SHADOW = 'rgba(100, 100, 100, 1)',
-    GRID_THICKNESS = 1,
+    GRID_HIGHLIGHT = 'rgba(30, 30, 30, 1)',
+    GRID_SHADOW = 'rgba(18, 18, 18, 1)',
     BOX_SIZE = 25,
-
-    // WINDOW_WIDTH = 500,
-    // WINDOW_HEIGHT = 700,
-    // BACKGROUND_COLOR = 'rgba(0, 0, 0, 1)',
-    // BORDER_COLOR = 'rgba(0, 0, 0, 1)',
-    // GRID_COLOR = 'rgba(230, 230, 230, 1)',
-    // BORDER_THICKNESS = 5,
-    //  X_MARGIN = (WINDOW_WIDTH / 2) - (BOARD_WIDTH * BOX_SIZE / 2);
-    //  Y_MARGIN = (WINDOW_HEIGHT / 2) - (VISIBLE_BOARD_HEIGHT * BOX_SIZE / 2);
 
     // font settings
     FONT_SIZE = 36,
