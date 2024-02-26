@@ -1,0 +1,61 @@
+#background {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 0px;
+    margin: 0px;
+    z-index: -99;
+    background-color: gray;
+}
+
+#main {
+    float: left;
+    position: relative;
+
+}
+
+#lstage {
+    float: left;
+    position: relative;
+    margin-right: 10px;
+    width: 100px;
+    height: 100px;
+    background-color: rgb(255, 255, 255);
+}
+
+#stage {
+    float: left;
+    position: relative;
+    width: 250px;
+    height: 500px;
+    background-color: #121212
+}
+
+#rstage {
+    margin-left: 10px;
+    float: left;
+    position: relative;
+    width: 100px;
+    height: 375px;
+    background-color: rgb(255, 255, 255);
+}
+
+#buttonsBox{
+    position: absolute;
+    display: flex;
+    width: 250px;
+    background-color: #121212;
+    margin-top: 25px;
+    margin-left: 110px;
+    justify-content: center;
+}
+
+#bgCanvas{
+    z-index: 1;
+}
+
+#mainCanvas{
+    z-index: 2;
+}

@@ -1,32 +1,29 @@
 import * as Pieces from './pieces.js';
 import * as Config from './config.js';
 
-let canvas;
-let ctx;
+const maindiv = document.getElementById('main');
+const bgCanvas = document.getElementById('bgCanvas');
+const bgctx = bgCanvas.getContext("2d");
+const gameCanvas = document.getElementById('gameCanvas');
+const gamectx = gameCanvas.getContext("2d");
+const holdCanvas = document.getElementById('holdCanvas');
+const holdctx = holdCanvas.getContext("2d");
+const queueCanvas = document.getElementById('queueCanvas');
+const queuectx = queueCanvas.getContext("2d");
+
 window.addEventListener('load', () => {
-    canvas = document.getElementById('gameCanvas');
-    ctx = canvas.getContext('2d');
-    canvas.focus();
-    addKeyEventListeners(canvas);
-    canvas.addEventListener("click", () => {
+
+    maindiv.focus();
+    addKeyEventListeners();
+    maindiv.addEventListener("click", () => {
         console.log("clicked");
-        canvas.focus();
+        maindiv.focus();
     });
 });
 
-
-const BOARD_WIDTH = 10;
-const VISIBLE_BOARD_HEIGHT = 20;
-const BOARD_HEIGHT = 24;
-
-const READY_SCREEN_TIMER = 1;
-const BLANK = 0;
-
-
-const FPS = 60;
+const interval = 1000 / Config.FPS;;
 let now;
 let then;
-let interval;
 let delta;
 
 let board;
@@ -35,12 +32,8 @@ let next_pieces;
 let curr_piece;
 let held_piece;
 
-let swap_hold_avail;
-let piece_held_this_turn;
-
 let game_over;
 let paused;
-
 let ready_go_screen;
 let draw_ready;
 let draw_go;
@@ -55,6 +48,8 @@ let moving_left;
 let moving_right;
 let moving_down;
 let piece_placed;
+let swap_hold_avail;
+let piece_held_this_turn;
 
 init();
 
@@ -95,21 +90,9 @@ function init() {
     // timer variables
     now = Date.now();
     then = Date.now();
-    interval = 1000 / FPS;
     delta = 0;
     requestAnimationFrame(update);
 }
-
-// function loop(){
-//     while(!game_over && !paused){
-//         now = Date.now();
-//         delta = now - then;
-
-//         // if key pressed or time elapsed: 
-//         // requestAnimatinoFrame(update);
-
-//     }
-// }
 
 
 // Game loop
@@ -118,9 +101,6 @@ function update() {
     now = Date.now();
     delta = now - then;
     if (delta > interval) {
-        // ctx.fillStyle = '#0095DD';
-        // // Draw a rectangle
-        // ctx.fillRect(20, 40, 50, 50);
         then = now - (delta % interval);
         // Runs this FPS times per 1 sec
         // check_for_quit();
@@ -174,9 +154,9 @@ function update() {
 
             } else {
                 // ready go screen is true
-                if (READY_SCREEN_TIMER > now - ready_screen_time) {
+                if (Config.READY_SCREEN_TIMER > now - ready_screen_time) {
                     draw_ready = true;
-                } else if (READY_SCREEN_TIMER * 2 > now - ready_screen_time) {
+                } else if (Config.READY_SCREEN_TIMER * 2 > now - ready_screen_time) {
                     draw_go = true;
                     draw_ready = false;
                 } else {
@@ -191,7 +171,7 @@ function update() {
             // "erase" screen
             // SCREEN.fill(BACKGROUND_COLOR)
 
-            // draw_background();
+            draw_background();
             // draw_board(board);
             if (curr_piece != null) {
                 print_board_with_piece(board, curr_piece);
@@ -242,17 +222,10 @@ function update() {
     }
 }
 
-function addKeyEventListeners(canvas) {
-
-    // canvas.addEventListener("keydown", (e) => {
-    //     if (!e.repeat) {
-    //         console.log(`Key "${e.key}" pressed [event: keydown]`);
-    //     } else {
-    //         console.log(`Key "${e.key}" repeating [event: keydown]`);
-    //     }
-    // });
+function addKeyEventListeners() {
     // key released
-    canvas.addEventListener("keyup", (e) => {
+
+    maindiv.addEventListener("keyup", (e) => {
         if (!e.repeat) {
             switch (e.key) {
                 case Config.KEYBINDS['move_left']:
@@ -271,9 +244,7 @@ function addKeyEventListeners(canvas) {
             }
         }
     });
-
-    // key pressed
-    canvas.addEventListener("keydown", (e) => {
+    maindiv.addEventListener("keydown", (e) => {
 
         if (!e.repeat) {
             if (!game_over && !ready_go_screen) {
@@ -305,7 +276,7 @@ function addKeyEventListeners(canvas) {
                             break;
                         case Config.KEYBINDS['harddrop']:
                             let i = 1;
-                            for (i = 1; i < BOARD_HEIGHT; i++) {
+                            for (i = 1; i < Config.BOARD_HEIGHT; i++) {
                                 if (!is_valid_position(board, curr_piece, 0, i)) {
                                     break;
                                 }
@@ -351,6 +322,9 @@ function addKeyEventListeners(canvas) {
             }
         }
     });
+
+    // key pressed
+
 
 }
 
@@ -435,13 +409,13 @@ function is_valid_position(board, piece, adjx = 0, adjy = 0) {
                 let piece_x = xcol + piece['x'] + adjx;
                 let piece_y = yrow + piece['y'] + adjy;
                 let is_above_board = piece_y < 0;
-                if (is_above_board || template[yrow][xcol] == BLANK) {
+                if (is_above_board || template[yrow][xcol] == Config.BLANK) {
                     continue;
                 }
                 if (!is_on_board(piece_y, piece_x)) {
                     return false;
                 }
-                if (board[piece_y][piece_x] != BLANK) {
+                if (board[piece_y][piece_x] != Config.BLANK) {
                     return false;
                 }
             }
@@ -458,16 +432,16 @@ function is_valid_position(board, piece, adjx = 0, adjy = 0) {
 // returns the number of removed lines;
 function remove_complete_lines(board) {
     let num_removed_lines = 0;
-    let yrow = BOARD_HEIGHT - 1;
+    let yrow = Config.BOARD_HEIGHT - 1;
     while (yrow >= 0) {
         if (is_complete_line(board, yrow)) {
             for (let pull_down_y = yrow; pull_down_y > 0; pull_down_y--) {
-                for (let xcol = 0; xcol < BOARD_WIDTH; xcol++) {
+                for (let xcol = 0; xcol < Config.BOARD_WIDTH; xcol++) {
                     board[pull_down_y][xcol] = board[pull_down_y - 1][xcol];
                 }
             }
-            for (let xcol = 0; xcol < BOARD_WIDTH; xcol++) {
-                board[0][xcol] = BLANK;
+            for (let xcol = 0; xcol < Config.BOARD_WIDTH; xcol++) {
+                board[0][xcol] = Config.BLANK;
             }
             num_removed_lines += 1;
         }
@@ -481,8 +455,8 @@ function remove_complete_lines(board) {
 
 // returns true if given row is full
 function is_complete_line(board, yrow) {
-    for (let xcol = 0; xcol < BOARD_WIDTH; xcol++) {
-        if (board[yrow][xcol] == BLANK) {
+    for (let xcol = 0; xcol < Config.BOARD_WIDTH; xcol++) {
+        if (board[yrow][xcol] == Config.BLANK) {
             return false;
         }
     }
@@ -491,7 +465,7 @@ function is_complete_line(board, yrow) {
 
 // returns true if given x y is within board
 function is_on_board(yrow, xcol) {
-    return (0 <= xcol && xcol < BOARD_WIDTH && yrow < BOARD_HEIGHT);
+    return (0 <= xcol && xcol < Config.BOARD_WIDTH && yrow < Config.BOARD_HEIGHT);
 }
 
 // solidifies a piece onto the current board state
@@ -499,7 +473,7 @@ function add_to_board(board, piece) {
     let template = Pieces.PIECE_SHAPES[piece['shape']][piece['rotation']];
     for (let yrow = 0; yrow < template.length; yrow++) {
         for (let xcol = 0; xcol < template[0].length; xcol++) {
-            if (template[yrow][xcol] != BLANK) {
+            if (template[yrow][xcol] != Config.BLANK) {
                 board[yrow + piece['y']][xcol + piece['x']] = piece['shape'];
             }
         }
@@ -514,16 +488,18 @@ function get_new_piece(piece_bag) {
     if (index > -1) { // only splice array when item is found
         piece_bag.splice(index, 1); // 2nd parameter means remove one item only
     }
-    let new_piece = { 'shape': shape, 'rotation': 0, 'x': 3, 'y': 3, 'color': Pieces.PIECE_COLORS[shape] };
+    let new_piece = {
+        'shape': shape, 'rotation': 0, 'x': 3, 'y': 3, 'color': Config.PIECE_COLORS[shape]
+    };
     return new_piece;
 }
 
 function new_board() {
     let board = [];
-    for (let yrow = 0; yrow < BOARD_HEIGHT; yrow++) {
+    for (let yrow = 0; yrow < Config.BOARD_HEIGHT; yrow++) {
         let row = [];
-        for (let xcol = 0; xcol < BOARD_WIDTH; xcol++) {
-            row.push(BLANK);
+        for (let xcol = 0; xcol < Config.BOARD_WIDTH; xcol++) {
+            row.push(Config.BLANK);
         }
         board.push(row);
     }
@@ -534,7 +510,9 @@ function new_board() {
 // draw text
 
 // draw background
-// function draw_background()
+function draw_background() {
+
+}
 
 // draw box
 
@@ -556,7 +534,7 @@ function print_board(board) {
     for (let yrow = 0; yrow < board.length; yrow++) {
         let row = "";
         for (let xcol = 0; xcol < board[0].length; xcol++) {
-            if (board[yrow][xcol] == BLANK) {
+            if (board[yrow][xcol] == Config.BLANK) {
                 row += '.';
             } else {
                 row += board[yrow][xcol];
@@ -572,7 +550,7 @@ function print_board_with_piece(board, piece) {
     let xys = [];
     for (let template_yrow = 0; template_yrow < template.length; template_yrow++) {
         for (let template_xcol = 0; template_xcol < template[0].length; template_xcol++) {
-            if (template[template_yrow][template_xcol] != BLANK) {
+            if (template[template_yrow][template_xcol] != Config.BLANK) {
                 xys.push([template_yrow + piece['y'], template_xcol + piece['x']]);
             }
         }
@@ -589,7 +567,7 @@ function print_board_with_piece(board, piece) {
             }
             if (inxys) {
                 b += piece['shape'];
-            } else if (board[yrow][xcol] != BLANK) {
+            } else if (board[yrow][xcol] != Config.BLANK) {
                 b += board[yrow][xcol];
             } else {
                 b += '.';
