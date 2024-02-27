@@ -56,7 +56,10 @@ export const
 
     // font settings
     FONT_SIZE = 36,
-    TEXT_FONT = "../static/fonts/Montserrat-Medium.ttf",
+    TEXT_FONT = "Montserrat-Medium",
+    TEXT_FONT_LOCATION = "static/fonts/Montserrat-Medium.ttf",
+    FONT_SIZE_LARGE = 36,
+    FONT_SIZE_SMALL = 24,
     FONT_COLOR = 'rgba(238, 238, 00, 1)',
     FONT_BACKGROUND_COLOR = 'rgba(155, 155, 155, 1)'
     ;

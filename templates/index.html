@@ -6,20 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game Title</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
-    <!-- <style>
-        /* Basic styling */
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        canvas {
-            border: 1px solid black;
-        }
-    </style> -->
 </head>
 
 <body>
@@ -28,15 +14,33 @@
         <nav></nav>
         <div id="background"></div>
         <div id="main" tabindex="0">
-            <div id="lstage" class="stage">
-                <canvas id="holdCanvas" width="100" height="100"></canvas>
-            </div>
-            <div id="middlestage">
-                <div id="stage" class="stage">
-                    <canvas id="bgCanvas" width="251" height="501"></canvas>
-                    <canvas id="gameCanvas" width="251" height="501"></canvas>
+            <div class="vertical-container">
+                <div id="upper-stage" class="stage">
+                    <canvas id="holdTextCanvas" class="textCanvas" width="100" height="40"></canvas>
+                    <canvas id="scoreTextCanvas" class="textCanvas" width="251" height="40"></canvas>
+                    <canvas id="queueTextCanvas" class="textCanvas" width="100" height="40"></canvas>
                 </div>
-                <div id="bstage" class="stage">
+                <div class="horizontal-container">
+                    <div id="lstage" class="stage">
+                        <!-- <canvas id="holdText" width="100" height="40"></canvas> -->
+                        <canvas id="holdCanvas" width="100" height="76"></canvas>
+                    </div>
+                    <div id="middlestage">
+                        <div id="stage" class="stage">
+                            <!-- <canvas id="gameScore" width="251" height="40"></canvas> -->
+                            <canvas id="bgCanvas" width="251" height="501"></canvas>
+                            <canvas id="gameCanvas" width="251" height="501"></canvas>
+                        </div>
+
+                    </div>
+
+                    <div id="rstage" class="stage">
+                        <!-- <canvas id="queueText" width="100" height="40"></canvas> -->
+                        <canvas id="queueCanvas" width="100" height="375"></canvas>
+                    </div>
+
+                </div>
+                <div id="bottom-stage" class="stage">
                     <div id="buttonsBox">
                         <button id="settings">Settings</button>
                         <button id="restart">Restart</button>
@@ -47,9 +51,7 @@
                 </div>
             </div>
 
-            <div id="rstage" class="stage">
-                <canvas id="queueCanvas" width="100" height="375"></canvas>
-            </div>
+
 
         </div>
     </div>

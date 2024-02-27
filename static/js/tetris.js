@@ -10,6 +10,12 @@ const holdCanvas = document.getElementById("holdCanvas");
 const holdctx = holdCanvas.getContext("2d");
 const queueCanvas = document.getElementById("queueCanvas");
 const queuectx = queueCanvas.getContext("2d");
+const scoreTextCanvas = document.getElementById("scoreTextCanvas");
+const scoreTextctx = scoreTextCanvas.getContext("2d");
+const holdTextCanvas = document.getElementById("holdTextCanvas");
+const holdTextctx = holdTextCanvas.getContext("2d");
+const queueTextCanvas = document.getElementById("queueTextCanvas");
+const queueTextctx = queueTextCanvas.getContext("2d");
 // draw_box(0, 0, Config.PIECE_COLORS['I']);
 // draw_box(1, 0, Config.PIECE_COLORS['I']);
 // draw_box(0, 1, Config.PIECE_COLORS['I']);
@@ -36,6 +42,7 @@ let next_pieces;
 let curr_piece;
 let held_piece;
 
+let score;
 let game_over;
 let paused;
 let ready_go_screen;
@@ -55,13 +62,22 @@ let piece_placed;
 let swap_hold_avail;
 let piece_held_this_turn;
 
-init();
+const font = new FontFace(Config.TEXT_FONT, 'url(' + Config.TEXT_FONT_LOCATION + ')');
+document.fonts.add(font);
+font.load();
+document.fonts.ready.then(() => {
+    init();
+});
+
 
 // Game initialization
 function init() {
     // board state variables
     draw_bg();
-
+    draw_text(holdTextctx, "HOLD", Config.TEXT_FONT, Config.FONT_SIZE_SMALL, Config.FONT_COLOR,
+        holdTextCanvas.width / 2, holdTextCanvas.height, "center", "bottom");
+    draw_text(queueTextctx, "NEXT", Config.TEXT_FONT, Config.FONT_SIZE_SMALL, Config.FONT_COLOR,
+        queueTextCanvas.width / 2, queueTextCanvas.height, "center", "bottom");
     board = new_board();
     piece_bag = Object.keys(Pieces.PIECE_SHAPES);
     curr_piece = null;
@@ -75,6 +91,7 @@ function init() {
     swap_hold_avail = true;
     game_over = false;
     paused = false;
+    score = 0;
 
     inital_move_side_done = false;
     last_move_down_time = Date.now();
@@ -112,8 +129,9 @@ function update() {
         // check_for_quit();
         if (!game_over) {
             if (!ready_go_screen) {
+                // get next piece
                 if (curr_piece == null) {
-                    curr_piece = next_pieces.pop();
+                    curr_piece = next_pieces.shift();
                     if (!is_valid_position(board, curr_piece)) {
                         move_piece(board, curr_piece, 0, -1);
                     }
@@ -122,9 +140,6 @@ function update() {
                     }
                     next_pieces.push(get_new_piece(piece_bag));
                 }
-
-                // handle key events
-
                 if (!paused) {
                     // continue moving side if key is held
                     if (inital_move_side_done && now - last_move_side_pressed > Config.MOVE_SIDEWAYS_OFFSET) {
@@ -172,14 +187,13 @@ function update() {
                 }
             }
 
-            remove_complete_lines(board);
+            score += remove_complete_lines(board);
             erase_board();
             draw_board(board);
+            draw_score(score);
             if (curr_piece != null) {
                 draw_piece_shadow(board, curr_piece);
-                draw_piece(curr_piece);
-            } else {
-                print_board(board);
+                draw_piece(gamectx, curr_piece, curr_piece['x'], curr_piece['y']);
             }
             if (next_pieces != null) {
                 draw_next_pieces(next_pieces);
@@ -207,13 +221,16 @@ function update() {
                 piece_held_this_turn = false;
             }
             if (draw_ready) {
-                //draw_text("READY", TEXT_FONT, FONT_SIZE, FONT_COLOR, FONT_BACKGROUND_COLOR);
+                draw_text(gamectx, "READY", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR,
+                    Config.BOARD_WIDTH / 2 * Config.BOX_SIZE, Config.VISIBLE_BOARD_HEIGHT / 2 * Config.BOX_SIZE);
             }
             if (draw_go) {
-                //draw_text
+                draw_text(gamectx, "GO!", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR,
+                    Config.BOARD_WIDTH / 2 * Config.BOX_SIZE, Config.VISIBLE_BOARD_HEIGHT / 2 * Config.BOX_SIZE);
             }
             if (paused) {
-                //draw_text
+                draw_text(gamectx, "PAUSED", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR,
+                    Config.BOARD_WIDTH / 2 * Config.BOX_SIZE, Config.VISIBLE_BOARD_HEIGHT / 2 * Config.BOX_SIZE);
             }
         }
     }
@@ -367,11 +384,11 @@ function rotate_piece(board, piece, adj_rot) {
 
     if (piece['shape'] == 'J' || piece['shape'] == 'L' || piece['shape'] == 'S' ||
         piece['shape'] == 'T' || piece['shape'] == 'Z') {
-        for (let a = 0; a < Pieces.WALLKICK_JLSTZ.length; a++) {
+        for (let a = 0; a < Pieces.WALLKICK_JLSTZ[i].length; a++) {
             piece['rotation'] = rot2; // set new rotation
             // adjust x, y according to tests
-            let testx = Pieces.WALLKICK_JLSTZ[a][0];
-            let testy = Pieces.WALLKICK_JLSTZ[a][1];
+            let testx = Pieces.WALLKICK_JLSTZ[i][a][0];
+            let testy = Pieces.WALLKICK_JLSTZ[i][a][1];
             piece['x'] += testx;
             piece['y'] -= testy; // -= because positive y in test goes up
             if (is_valid_position(board, piece)) {
@@ -384,10 +401,10 @@ function rotate_piece(board, piece, adj_rot) {
 
         }
     } else if (piece['shape'] == 'I') {
-        for (let a = 0; a < Pieces.WALLKICK_I.length; a++) {
+        for (let a = 0; a < Pieces.WALLKICK_I[i].length; a++) {
             piece['rotation'] = rot2;
-            let testx = Pieces.WALLKICK_I[a][0];
-            let testy = Pieces.WALLKICK_I[a][1];
+            let testx = Pieces.WALLKICK_I[i][a][0];
+            let testy = Pieces.WALLKICK_I[i][a][1];
             piece['x'] += testx;
             piece['y'] -= testy;
             if (is_valid_position(board, piece)) {
@@ -508,6 +525,25 @@ function new_board() {
 
 
 // draw text
+function draw_text(ctx, text, font, size, color, x, y, align = "center", baseline = "middle") {
+    ctx.font = size + "px" + " " + font;
+    ctx.textAlign = align;
+    ctx.textBaseline = baseline;
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+
+}
+
+function draw_score(score) {
+    let str = score.toString()
+    str = str.padStart(7, "0");
+    
+    scoreTextctx.clearRect(0, 0, scoreTextCanvas.width, scoreTextCanvas.height);
+    draw_text(scoreTextctx, "SCORE:", Config.TEXT_FONT, Config.FONT_SIZE_SMALL, Config.FONT_COLOR,
+        0, scoreTextCanvas.height, "left", "bottom");
+    draw_text(scoreTextctx, str, Config.TEXT_FONT, Config.FONT_SIZE_SMALL, Config.FONT_COLOR, scoreTextCanvas.width, scoreTextCanvas.height, "right", "bottom");
+}
+
 
 // draw background
 function draw_bg() {
@@ -527,71 +563,92 @@ function draw_bg() {
     }
     bgctx.stroke();
 
-    bgctx.setLineDash([Config.BOX_SIZE*5/12, Config.BOX_SIZE*7/12])
+    bgctx.setLineDash([Config.BOX_SIZE * 5 / 12, Config.BOX_SIZE * 7 / 12])
     bgctx.strokeStyle = Config.GRID_HIGHLIGHT;
-    bgctx.lineDashOffset = Config.BOX_SIZE*5/26;
+    bgctx.lineDashOffset = Config.BOX_SIZE * 5 / 26;
     bgctx.stroke();
 
 }
 
 
 // draw box
-function draw_box(yrow, xcol, color){
-    gamectx.fillStyle = color;
-    gamectx.fillRect(xcol * Config.BOX_SIZE + 1, yrow * Config.BOX_SIZE + 1, Config.BOX_SIZE - 1, Config.BOX_SIZE - 1);
+function draw_box(ctx, yrow, xcol, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(Math.floor(xcol * Config.BOX_SIZE + 1), Math.floor(yrow * Config.BOX_SIZE + 1), Config.BOX_SIZE - 1, Config.BOX_SIZE - 1);
 }
 
-function erase_board(){
+function erase_board() {
     gamectx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+    queuectx.clearRect(0, 0, queueCanvas.width, queueCanvas.height);
+    holdctx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
 }
 
 // draw board
 
-function draw_board(board){
-    for(let yrow = Config.BOARD_HEIGHT - Config.VISIBLE_BOARD_HEIGHT; yrow < Config.BOARD_HEIGHT; yrow++){
-        for(let xcol = 0; xcol < Config.BOARD_WIDTH; xcol++){
-            if(board[yrow][xcol] != Config.BLANK){
-                draw_box(yrow + Config.VISIBLE_BOARD_HEIGHT - Config.BOARD_HEIGHT, xcol, Config.PIECE_COLORS[board[yrow][xcol]]);
+function draw_board(board) {
+    for (let yrow = Config.BOARD_HEIGHT - Config.VISIBLE_BOARD_HEIGHT; yrow < Config.BOARD_HEIGHT; yrow++) {
+        for (let xcol = 0; xcol < Config.BOARD_WIDTH; xcol++) {
+            if (board[yrow][xcol] != Config.BLANK) {
+                draw_box(gamectx, yrow + Config.VISIBLE_BOARD_HEIGHT - Config.BOARD_HEIGHT, xcol, Config.PIECE_COLORS[board[yrow][xcol]]);
             }
         }
     }
 }
 
 // draw next pieces
-function draw_next_pieces(next_pieces){
+function draw_next_pieces(next_pieces) {
+    for (let i = 0; i < next_pieces.length; i++) {
+        let x = 0.5;
+        let y = i * 3 + 0.5 + Config.BOARD_HEIGHT - Config.VISIBLE_BOARD_HEIGHT;
+        if (next_pieces[i]['shape'] == 'I') {
+            x = 0;
+            y -= 0.5;
+        } else if (next_pieces[i]['shape'] == 'O') {
+            x = 0;
+        }
+        draw_piece(queuectx, next_pieces[i], x, y);
+    }
 
 }
 // draw held pieces
-function draw_held_piece(piece){
-    
+function draw_held_piece(piece) {
+    let x = 0.5;
+    let y = 0.5 + Config.BOARD_HEIGHT - Config.VISIBLE_BOARD_HEIGHT;
+    if (piece['shape'] == 'I') {
+        x = 0;
+        y -= 0.5;
+    } else if (piece['shape'] == 'O') {
+        x = 0;
+    }
+    draw_piece(holdctx, piece, x, y);
 }
 // draw piece
-function draw_piece(piece){
+function draw_piece(ctx, piece, x, y) {
     const template = Pieces.PIECE_SHAPES[piece['shape']][piece['rotation']];
-    for(let yrow = 0; yrow < template.length; yrow++){
-        for(let xcol = 0; xcol < template[0].length; xcol++){
-            if(template[yrow][xcol] != Config.BLANK){
-                if (yrow + piece['y'] + Config.VISIBLE_BOARD_HEIGHT - Config.BOARD_HEIGHT >= 0){
-                    draw_box(yrow + piece['y'] + Config.VISIBLE_BOARD_HEIGHT - Config.BOARD_HEIGHT, xcol + piece['x'], piece['color']);
+    for (let yrow = 0; yrow < template.length; yrow++) {
+        for (let xcol = 0; xcol < template[0].length; xcol++) {
+            if (template[yrow][xcol] != Config.BLANK) {
+                if (yrow + y + Config.VISIBLE_BOARD_HEIGHT - Config.BOARD_HEIGHT >= 0) {
+                    draw_box(ctx, yrow + y + Config.VISIBLE_BOARD_HEIGHT - Config.BOARD_HEIGHT, xcol + x, piece['color']);
                 }
             }
         }
     }
 }
 // draw piece shadow
-function draw_piece_shadow(board, piece){
+function draw_piece_shadow(board, piece) {
     let i;
-    for(i = 1; i < Config.BOARD_HEIGHT; i++){
-        if(!is_valid_position(board, piece, 0, i)){
+    for (i = 1; i < Config.BOARD_HEIGHT; i++) {
+        if (!is_valid_position(board, piece, 0, i)) {
             break;
         }
     }
-    let shadow = {'shape': piece['shape'], 'rotation': piece['rotation'],
-              'x': piece['x'], 'y': piece['y'] + i - 1, 'color': Config.SHADOW_COLORS[piece['shape']]};
-    draw_piece(shadow);
+    let shadow = {
+        'shape': piece['shape'], 'rotation': piece['rotation'],
+        'x': piece['x'], 'y': piece['y'] + i - 1, 'color': Config.SHADOW_COLORS[piece['shape']]
+    };
+    draw_piece(gamectx, shadow, shadow['x'], shadow['y']);
 }
-
-// convert to pixel coords
 
 function print_board(board) {
     let b = ""
