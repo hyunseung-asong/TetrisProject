@@ -30,6 +30,48 @@ export const
     FALL_FREQ = 1.5 * 1000,
 
 
+    ACTION_SCORE = {
+        'Single': 100,
+        'Double': 300,
+        'Triple': 500,
+        'Tetris': 800,
+        'Mini T-Spin no lines': 100,
+        'T-Spin no lines': 200,
+        'Mini T-Spin Single': 200,
+        'T-Spin Single': 800,
+        'Mini T-Spin Double': 400,
+        'T-Spin Double': 1200,
+        'T-Spin Triple': 1600,
+        'Softdrop': 1,
+        'Harddrop': 2,
+        'Combo': 50,
+        'Single PC': 800,
+        'Double PC': 1200,
+        'Triple PC': 1800,
+        'Tetris PC': 2000,
+        'B2B Tetris PC': 3200
+    },
+
+    ACTION_DIFFICULTY = {
+        'Single': false,
+        'Double': false,
+        'Triple': false,
+        'Tetris': true,
+        'Mini T-Spin no lines': false,
+        'T-Spin no lines': false,
+        'Mini T-Spin Single': true,
+        'T-Spin Single': true,
+        'Mini T-Spin Double': true,
+        'T-Spin Double': true,
+        'T-Spin Triple': true,
+        'Softdrop': false,
+        'Harddrop': false,
+        'Combo': false
+    },
+
+
+
+
     // appearance settings
     PIECE_COLORS = {
         'I': 'rgba(0, 255, 255, 1)',
@@ -60,6 +102,7 @@ export const
     TEXT_FONT_LOCATION = "static/fonts/Montserrat-Medium.ttf",
     FONT_SIZE_LARGE = 36,
     FONT_SIZE_SMALL = 24,
-    FONT_COLOR = 'rgba(238, 238, 00, 1)',
+    FONT_SIZE_SMALLEST = 12,
+    FONT_COLOR_YELLOW = 'rgba(238, 238, 00, 1)',
     FONT_BACKGROUND_COLOR = 'rgba(155, 155, 155, 1)'
     ;

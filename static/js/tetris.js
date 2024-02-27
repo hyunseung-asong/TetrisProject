@@ -16,6 +16,8 @@ const holdTextCanvas = document.getElementById("holdTextCanvas");
 const holdTextctx = holdTextCanvas.getContext("2d");
 const queueTextCanvas = document.getElementById("queueTextCanvas");
 const queueTextctx = queueTextCanvas.getContext("2d");
+const gameStatsCanvas = document.getElementById("gameStatsCanvas");
+const gameStatsctx = gameStatsCanvas.getContext("2d");
 // draw_box(0, 0, Config.PIECE_COLORS['I']);
 // draw_box(1, 0, Config.PIECE_COLORS['I']);
 // draw_box(0, 1, Config.PIECE_COLORS['I']);
@@ -38,6 +40,7 @@ let delta;
 
 let board;
 let piece_bag;
+let placed_piece;
 let next_pieces;
 let curr_piece;
 let held_piece;
@@ -62,6 +65,17 @@ let piece_placed;
 let swap_hold_avail;
 let piece_held_this_turn;
 
+let totalLinesCleared;
+let attack;
+let clearAction;
+let level;
+let currentCombo;
+let maxCombo;
+let last_action;
+let lines_moved;
+let harddropped;
+
+
 const font = new FontFace(Config.TEXT_FONT, 'url(' + Config.TEXT_FONT_LOCATION + ')');
 document.fonts.add(font);
 font.load();
@@ -74,10 +88,11 @@ document.fonts.ready.then(() => {
 function init() {
     // board state variables
     draw_bg();
-    draw_text(holdTextctx, "HOLD", Config.TEXT_FONT, Config.FONT_SIZE_SMALL, Config.FONT_COLOR,
+    draw_text(holdTextctx, "HOLD", Config.TEXT_FONT, Config.FONT_SIZE_SMALL, Config.FONT_COLOR_YELLOW,
         holdTextCanvas.width / 2, holdTextCanvas.height, "center", "bottom");
-    draw_text(queueTextctx, "NEXT", Config.TEXT_FONT, Config.FONT_SIZE_SMALL, Config.FONT_COLOR,
+    draw_text(queueTextctx, "NEXT", Config.TEXT_FONT, Config.FONT_SIZE_SMALL, Config.FONT_COLOR_YELLOW,
         queueTextCanvas.width / 2, queueTextCanvas.height, "center", "bottom");
+
     board = new_board();
     piece_bag = Object.keys(Pieces.PIECE_SHAPES);
     curr_piece = null;
@@ -86,12 +101,22 @@ function init() {
         next_pieces.push(get_new_piece(piece_bag));
     }
     held_piece = null;
+    placed_piece = null;
 
     piece_held_this_turn = false;
     swap_hold_avail = true;
     game_over = false;
     paused = false;
     score = 0;
+    totalLinesCleared = 0;
+    attack = 0;
+    clearAction = null;
+    level = 1;
+    currentCombo = 0;
+    maxCombo = 0;
+    last_action = null;
+    lines_moved = 0;
+    harddropped = false;
 
     inital_move_side_done = false;
     last_move_down_time = Date.now();
@@ -108,8 +133,6 @@ function init() {
     draw_go = false;
     ready_screen_time = Date.now();
 
-
-
     // timer variables
     now = Date.now();
     then = Date.now();
@@ -117,121 +140,23 @@ function init() {
     requestAnimationFrame(update);
 }
 
-
 // Game loop
 function update() {
-    // Game logic goes here
     now = Date.now();
     delta = now - then;
     if (delta > interval) {
         then = now - (delta % interval);
-        // Runs this FPS times per 1 sec
-        // check_for_quit();
         if (!game_over) {
             if (!ready_go_screen) {
-                // get next piece
-                if (curr_piece == null) {
-                    curr_piece = next_pieces.shift();
-                    if (!is_valid_position(board, curr_piece)) {
-                        move_piece(board, curr_piece, 0, -1);
-                    }
-                    if (piece_bag.length == 0) {
-                        piece_bag = Object.keys(Pieces.PIECE_SHAPES);
-                    }
-                    next_pieces.push(get_new_piece(piece_bag));
-                }
+                get_next_piece();
                 if (!paused) {
-                    // continue moving side if key is held
-                    if (inital_move_side_done && now - last_move_side_pressed > Config.MOVE_SIDEWAYS_OFFSET) {
-                        if ((moving_left || moving_right) && now - last_move_side_time > Config.MOVE_SIDEWAYS_FREQ) {
-                            if (moving_left) {
-                                move_piece(board, curr_piece, -1, 0);
-                            } else if (moving_right) {
-                                move_piece(board, curr_piece, 1, 0);
-                            }
-                            last_move_side_time = now;
-                        }
-                    }
-                    // continue moving down if key is held (softdrop)
-                    if (moving_down && now - last_move_down_time > Config.MOVE_DOWN_FREQ) {
-                        move_piece(board, curr_piece, 0, 1);
-                        last_move_down_time = now;
-                        last_fall_time = now;
-                    }
-                    // let piece fall naturally
-                    if (now - last_fall_time > Config.FALL_FREQ) {
-                        //solidify piece
-                        if (is_valid_position(board, curr_piece, 0, 1)) {
-                            curr_piece['y'] += 1;
-                            last_fall_time = now;
-                        } else {
-                            piece_placed = true;
-                            moving_down = false;
-                            moving_left = false;
-                            moving_right = false;
-                        }
-                    }
+                    handle_piece_movement();
                 }
-
             } else {
-                // ready go screen is true
-                if (Config.READY_SCREEN_TIMER > now - ready_screen_time) {
-                    draw_ready = true;
-                } else if (Config.READY_SCREEN_TIMER * 2 > now - ready_screen_time) {
-                    draw_go = true;
-                    draw_ready = false;
-                } else {
-                    draw_ready = false;
-                    draw_go = false;
-                    ready_go_screen = false;
-                }
+                countdown_ready_go();
             }
-
-            score += remove_complete_lines(board);
-            erase_board();
-            draw_board(board);
-            draw_score(score);
-            if (curr_piece != null) {
-                draw_piece_shadow(board, curr_piece);
-                draw_piece(gamectx, curr_piece, curr_piece['x'], curr_piece['y']);
-            }
-            if (next_pieces != null) {
-                draw_next_pieces(next_pieces);
-            }
-            if (held_piece != null) {
-                draw_held_piece(held_piece);
-            }
-            if (piece_placed) {
-                if (!is_valid_position(board, curr_piece, 0, 0)) {
-                    game_over = true;
-                    // console.log("gg");
-                } else {
-                    add_to_board(board, curr_piece);
-                    curr_piece = null;
-                    piece_placed = false;
-                    swap_hold_avail = true;
-                    last_fall_time = now;
-                    last_move_side_time = now;
-                    last_move_side_pressed = now;
-                    last_move_down_time = now;
-                }
-            }
-            if (piece_held_this_turn) {
-                curr_piece = null;
-                piece_held_this_turn = false;
-            }
-            if (draw_ready) {
-                draw_text(gamectx, "READY", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR,
-                    Config.BOARD_WIDTH / 2 * Config.BOX_SIZE, Config.VISIBLE_BOARD_HEIGHT / 2 * Config.BOX_SIZE);
-            }
-            if (draw_go) {
-                draw_text(gamectx, "GO!", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR,
-                    Config.BOARD_WIDTH / 2 * Config.BOX_SIZE, Config.VISIBLE_BOARD_HEIGHT / 2 * Config.BOX_SIZE);
-            }
-            if (paused) {
-                draw_text(gamectx, "PAUSED", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR,
-                    Config.BOARD_WIDTH / 2 * Config.BOX_SIZE, Config.VISIBLE_BOARD_HEIGHT / 2 * Config.BOX_SIZE);
-            }
+            update_board();
+            update_canvases();
         }
     }
     if (!game_over) {
@@ -270,6 +195,7 @@ function addKeyEventListeners() {
                         case Config.KEYBINDS['move_left']:
 
                             move_piece(board, curr_piece, -1, 0);
+                            last_action = "move_left";
                             moving_left = true;
                             last_move_side_time = now;
                             if (!inital_move_side_done) {
@@ -279,6 +205,7 @@ function addKeyEventListeners() {
                             break;
                         case Config.KEYBINDS['move_right']:
                             move_piece(board, curr_piece, 1, 0);
+                            last_action = "move_right";
                             moving_right = true;
                             last_move_side_time = now;
                             if (!inital_move_side_done) {
@@ -287,11 +214,13 @@ function addKeyEventListeners() {
                             }
                             break;
                         case Config.KEYBINDS['softdrop']:
+                            last_action = "softdrop";
                             move_piece(board, curr_piece, 0, 1);
                             moving_down = true;
                             last_move_down_time = now;
                             break;
                         case Config.KEYBINDS['harddrop']:
+                            harddropped = true;
                             let i = 1;
                             for (i = 1; i < Config.BOARD_HEIGHT; i++) {
                                 if (!is_valid_position(board, curr_piece, 0, i)) {
@@ -299,15 +228,19 @@ function addKeyEventListeners() {
                                 }
                             }
                             curr_piece['y'] += i - 1;
+                            lines_moved = i - 1;
+                            placed_piece = curr_piece;
                             piece_placed = true;
                             moving_down = false;
                             moving_left = false;
                             moving_right = false;
                             break;
                         case Config.KEYBINDS['rotate_right']:
+                            last_action = "rotate_right";
                             rotate_piece(board, curr_piece, 1);
                             break;
                         case Config.KEYBINDS['rotate_left']:
+                            last_action = "rotate_left";
                             rotate_piece(board, curr_piece, -1);
                             break;
                         case Config.KEYBINDS['hold']:
@@ -537,11 +470,11 @@ function draw_text(ctx, text, font, size, color, x, y, align = "center", baselin
 function draw_score(score) {
     let str = score.toString()
     str = str.padStart(7, "0");
-    
+
     scoreTextctx.clearRect(0, 0, scoreTextCanvas.width, scoreTextCanvas.height);
-    draw_text(scoreTextctx, "SCORE:", Config.TEXT_FONT, Config.FONT_SIZE_SMALL, Config.FONT_COLOR,
+    draw_text(scoreTextctx, "SCORE:", Config.TEXT_FONT, Config.FONT_SIZE_SMALL, Config.FONT_COLOR_YELLOW,
         0, scoreTextCanvas.height, "left", "bottom");
-    draw_text(scoreTextctx, str, Config.TEXT_FONT, Config.FONT_SIZE_SMALL, Config.FONT_COLOR, scoreTextCanvas.width, scoreTextCanvas.height, "right", "bottom");
+    draw_text(scoreTextctx, str, Config.TEXT_FONT, Config.FONT_SIZE_SMALL, Config.FONT_COLOR_YELLOW, scoreTextCanvas.width, scoreTextCanvas.height, "right", "bottom");
 }
 
 
@@ -697,4 +630,219 @@ function print_board_with_piece(board, piece) {
         b += "\n";
     }
     console.log(b);
+}
+
+function get_next_piece() {
+    if (curr_piece == null) {
+        curr_piece = next_pieces.shift();
+        if (!is_valid_position(board, curr_piece)) {
+            move_piece(board, curr_piece, 0, -1);
+        }
+        if (piece_bag.length == 0) {
+            piece_bag = Object.keys(Pieces.PIECE_SHAPES);
+        }
+        next_pieces.push(get_new_piece(piece_bag));
+    }
+}
+
+function handle_piece_movement() {
+    if (inital_move_side_done && now - last_move_side_pressed > Config.MOVE_SIDEWAYS_OFFSET) {
+        if ((moving_left || moving_right) && now - last_move_side_time > Config.MOVE_SIDEWAYS_FREQ) {
+            if (moving_left) {
+                last_action = "move_left";
+                move_piece(board, curr_piece, -1, 0);
+            } else if (moving_right) {
+                last_action = "move_right";
+                move_piece(board, curr_piece, 1, 0);
+            }
+            last_move_side_time = now;
+        }
+    }
+    // continue moving down if key is held (softdrop)
+    if (moving_down && now - last_move_down_time > Config.MOVE_DOWN_FREQ) {
+        last_action = "softdrop";
+        lines_moved = 1;
+        move_piece(board, curr_piece, 0, 1);
+        last_move_down_time = now;
+        last_fall_time = now;
+    }
+    // let piece fall naturally
+    if (now - last_fall_time > Config.FALL_FREQ) {
+        //solidify piece
+        if (is_valid_position(board, curr_piece, 0, 1)) {
+            last_action = "move_down";
+            lines_moved = 1;
+            curr_piece['y'] += 1;
+            last_fall_time = now;
+        } else {
+            placed_piece = curr_piece;
+            piece_placed = true;
+            moving_down = false;
+            moving_left = false;
+            moving_right = false;
+        }
+    }
+}
+
+function countdown_ready_go() {
+    if (Config.READY_SCREEN_TIMER > now - ready_screen_time) {
+        draw_ready = true;
+    } else if (Config.READY_SCREEN_TIMER * 2 > now - ready_screen_time) {
+        draw_go = true;
+        draw_ready = false;
+    } else {
+        draw_ready = false;
+        draw_go = false;
+        ready_go_screen = false;
+    }
+}
+
+function compute_clear_action(linesCleared, piece, board, last_action, harddropped) {
+    let action = "None";
+    // if (harddropped) {
+    //     score += lines_moved * Config.ACTION_SCORE['Harddrop'];
+    // }
+    // if (last_action == "softdrop") {
+    //     action = "Softdrop";
+    //     return;
+    // } 
+    if (linesCleared == 0) {
+        if (last_action == "rotate_left" || last_action == "rotate_right" && piece['shape'] == 'T') {
+            //check for 
+            // tspin no lines
+            // mini tspin no lines
+        }
+    } else if (linesCleared == 1) {
+        // check PC
+        if (board_empty) {
+            action = "Single PC";
+        } else if (last_action == "rotate_left" || last_action == "rotate_right" && piece['shape'] == 'T') {
+            //check for 
+            // tspin no lines
+            // mini tspin no lines
+        } else {
+            action = "Single";
+        }
+    } else if (linesCleared == 2) {
+        // check PC
+        if (board_empty) {
+            action = "Double PC";
+        } else if (last_action == "rotate_left" || last_action == "rotate_right" && piece['shape'] == 'T') {
+            //check for 
+            // tspin double
+            // mini tspin double
+        } else {
+            action = "Double";
+        }
+    } else if (linesCleared == 3) {
+        // check PC
+        if (board_empty) {
+            action = "Triple PC";
+        } else if (last_action == "rotate_left" || last_action == "rotate_right" && piece['shape'] == 'T') {
+            //check for 
+            // tspin trple
+            // mini tspin triple
+        } else {
+            action = "Triple";
+        }
+    } else if (linesCleared == 4) {
+        if (board_empty) {
+            action = "Tetris PC";
+        } else {
+            action = "Tetris";
+        }
+    }
+    let tempScore = Config.ACTION_SCORE[action];
+    let difficult = Config.ACTION_DIFFICULTY[action];
+    if (clearAction == action) {
+        if(action == "Tetris PC"){
+            tempScore = Config.ACTION_SCORE['B2B Tetris PC'];
+        }else if(difficult){
+            tempScore *= 1.5;
+        }
+    }
+    if (clearAction != "None") {
+        currentCombo += 1;
+        if (currentCombo > maxCombo) {
+            maxCombo = currentCombo;
+        }
+        tempScore += Config.ACTION_SCORE['Combo'];
+    }
+    tempScore *= level;
+    score += tempScore;
+}
+
+function board_empty(board) {
+    for (let yrow = Config.BOARD_HEIGHT - 1; yrow >= 0; yrow--) {
+        for (let xcol = 0; xcol < Config.BOARD_WIDTH; xcol++) {
+            if (board[yrow][xcol] != Config.BLANK) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+function update_board() {
+
+
+    let linesCleared = remove_complete_lines(board);
+    compute_clear_action(linesCleared, placed_piece, board, last_action, harddropped);
+
+    // linesCleared += remove_complete_lines(board);
+    level = Math.floor(totalLinesCleared / 10);
+    // if (curr_piece != null) {
+    //     console.log(curr_piece['shape']);
+    // }
+    if (piece_placed) {
+        if (!is_valid_position(board, curr_piece, 0, 0)) {
+            game_over = true;
+            // console.log("gg");
+        } else {
+            add_to_board(board, curr_piece);
+            curr_piece = null;
+            piece_placed = false;
+            swap_hold_avail = true;
+            last_fall_time = now;
+            last_move_side_time = now;
+            last_move_side_pressed = now;
+            last_move_down_time = now;
+            harddropped = false;
+            last_action = null;
+            lines_moved = 0;
+        }
+    }
+    if (piece_held_this_turn) {
+        curr_piece = null;
+        piece_held_this_turn = false;
+        last_action == null;
+    }
+}
+
+function update_canvases() {
+    erase_board();
+    draw_board(board);
+    draw_score(score);
+    if (curr_piece != null) {
+        draw_piece_shadow(board, curr_piece);
+        draw_piece(gamectx, curr_piece, curr_piece['x'], curr_piece['y']);
+    }
+    if (next_pieces != null) {
+        draw_next_pieces(next_pieces);
+    }
+    if (held_piece != null) {
+        draw_held_piece(held_piece);
+    }
+    if (draw_ready) {
+        draw_text(gamectx, "READY", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR_YELLOW,
+            Config.BOARD_WIDTH / 2 * Config.BOX_SIZE, Config.VISIBLE_BOARD_HEIGHT / 2 * Config.BOX_SIZE);
+    }
+    if (draw_go) {
+        draw_text(gamectx, "GO!", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR_YELLOW,
+            Config.BOARD_WIDTH / 2 * Config.BOX_SIZE, Config.VISIBLE_BOARD_HEIGHT / 2 * Config.BOX_SIZE);
+    }
+    if (paused) {
+        draw_text(gamectx, "PAUSED", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR_YELLOW,
+            Config.BOARD_WIDTH / 2 * Config.BOX_SIZE, Config.VISIBLE_BOARD_HEIGHT / 2 * Config.BOX_SIZE);
+    }
 }
