@@ -25,12 +25,13 @@ export const
     FPS = 60,
     READY_SCREEN_TIMER = 1 * 1000,
     MOVE_SIDEWAYS_OFFSET = 0.15 * 1000,
-    MOVE_SIDEWAYS_FREQ = 0.04 * 1000,
+    MOVE_SIDEWAYS_FREQ = 0.035 * 1000,
     MOVE_DOWN_FREQ = 0.04 * 1000,
     FALL_FREQ = 1.5 * 1000,
 
 
     ACTION_SCORE = {
+        'None': 0,
         'Single': 100,
         'Double': 300,
         'Triple': 500,

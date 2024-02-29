@@ -53,27 +53,35 @@ let draw_ready;
 let draw_go;
 let ready_screen_time;
 
-let inital_move_side_done;
+let initial_move_side_done;
 let last_move_down_time;
 let last_move_side_time;
 let last_move_side_pressed;
 let last_fall_time;
-let moving_left;
-let moving_right;
-let moving_down;
+
+// key presses
+let holding_move_left;
+let holding_move_right;
+let holding_softdrop;
+let pressed_harddrop;
+let pressed_rotate_left;
+let pressed_rotate_right;
+let pressed_hold;
+
 let piece_placed;
 let swap_hold_avail;
 let piece_held_this_turn;
 
 let totalLinesCleared;
-let attack;
-let clearAction;
 let level;
 let currentCombo;
 let maxCombo;
-let last_action;
-let lines_moved;
-let harddropped;
+let piece_moved;
+let rotation_before_down_movement_occured;
+let rotation_before_down_movement_type;
+let down_movement_occured;
+let down_movement_type;
+let down_movement_lines;
 
 
 const font = new FontFace(Config.TEXT_FONT, 'url(' + Config.TEXT_FONT_LOCATION + ')');
@@ -109,23 +117,32 @@ function init() {
     paused = false;
     score = 0;
     totalLinesCleared = 0;
-    attack = 0;
-    clearAction = null;
     level = 1;
     currentCombo = 0;
     maxCombo = 0;
-    last_action = null;
-    lines_moved = 0;
-    harddropped = false;
 
-    inital_move_side_done = false;
+    piece_moved = false;
+    rotation_before_down_movement_occured = false;
+    rotation_before_down_movement_type = "None";
+    down_movement_occured = false;
+    down_movement_type = "None";
+    down_movement_lines = 0;
+
+    initial_move_side_done = false;
     last_move_down_time = Date.now();
     last_move_side_time = Date.now();
     last_move_side_pressed = Date.now();
     last_fall_time = Date.now();
-    moving_left = false;
-    moving_right = false;
-    moving_down = false;
+
+    // key presses
+    holding_move_left = false;
+    holding_move_right = false;
+    holding_softdrop = false;
+    pressed_harddrop = false;
+    pressed_rotate_left = false;
+    pressed_rotate_right = false;
+    pressed_hold = false;
+
     piece_placed = false;
 
     ready_go_screen = true;
@@ -147,17 +164,15 @@ function update() {
     if (delta > interval) {
         then = now - (delta % interval);
         if (!game_over) {
-            if (!ready_go_screen) {
-                get_next_piece();
-                if (!paused) {
-                    handle_piece_movement();
-                }
-            } else {
+            if (ready_go_screen) {
                 countdown_ready_go();
+            } else if (!paused) {
+                get_next_piece();
+                handle_piece_movement();
+                update_board();
             }
-            update_board();
-            update_canvases();
         }
+        update_canvases();
     }
     if (!game_over) {
         requestAnimationFrame(update);
@@ -165,21 +180,21 @@ function update() {
 }
 
 function addKeyEventListeners() {
-    // key released
-
     maindiv.addEventListener("keyup", (e) => {
         if (!e.repeat) {
             switch (e.key) {
                 case Config.KEYBINDS['move_left']:
-                    moving_left = false;
-                    inital_move_side_done = false;
+                    holding_move_left = false;
+                    last_move_side_pressed = now;
+                    initial_move_side_done = false;
                     break;
                 case Config.KEYBINDS['move_right']:
-                    moving_right = false;
-                    inital_move_side_done = false;
+                    holding_move_right = false;
+                    last_move_side_pressed = now;
+                    initial_move_side_done = false;
                     break;
                 case Config.KEYBINDS['softdrop']:
-                    moving_down = false;
+                    holding_softdrop = false;
                     break;
                 default:
                     break;
@@ -188,94 +203,44 @@ function addKeyEventListeners() {
     });
     maindiv.addEventListener("keydown", (e) => {
 
-        if (!e.repeat) {
-            if (!game_over && !ready_go_screen) {
-                if (!paused) {
-                    switch (e.key) {
-                        case Config.KEYBINDS['move_left']:
-
-                            move_piece(board, curr_piece, -1, 0);
-                            last_action = "move_left";
-                            moving_left = true;
-                            last_move_side_time = now;
-                            if (!inital_move_side_done) {
-                                inital_move_side_done = true;
-                                last_move_side_pressed = now;
-                            }
-                            break;
-                        case Config.KEYBINDS['move_right']:
-                            move_piece(board, curr_piece, 1, 0);
-                            last_action = "move_right";
-                            moving_right = true;
-                            last_move_side_time = now;
-                            if (!inital_move_side_done) {
-                                inital_move_side_done = true;
-                                last_move_side_pressed = now;
-                            }
-                            break;
-                        case Config.KEYBINDS['softdrop']:
-                            last_action = "softdrop";
-                            move_piece(board, curr_piece, 0, 1);
-                            moving_down = true;
-                            last_move_down_time = now;
-                            break;
-                        case Config.KEYBINDS['harddrop']:
-                            harddropped = true;
-                            let i = 1;
-                            for (i = 1; i < Config.BOARD_HEIGHT; i++) {
-                                if (!is_valid_position(board, curr_piece, 0, i)) {
-                                    break;
-                                }
-                            }
-                            curr_piece['y'] += i - 1;
-                            lines_moved = i - 1;
-                            placed_piece = curr_piece;
-                            piece_placed = true;
-                            moving_down = false;
-                            moving_left = false;
-                            moving_right = false;
-                            break;
-                        case Config.KEYBINDS['rotate_right']:
-                            last_action = "rotate_right";
-                            rotate_piece(board, curr_piece, 1);
-                            break;
-                        case Config.KEYBINDS['rotate_left']:
-                            last_action = "rotate_left";
-                            rotate_piece(board, curr_piece, -1);
-                            break;
-                        case Config.KEYBINDS['hold']:
-                            if (swap_hold_avail) {
-                                if (held_piece == null) {
-                                    held_piece = {
-                                        'shape': curr_piece['shape'], 'rotation': 0, 'x': 3, 'y': 3, 'color': curr_piece['color']
-                                    };
-                                    piece_held_this_turn = true;
-                                } else {
-                                    let temp_piece = curr_piece;
-                                    curr_piece = held_piece;
-                                    held_piece = {
-                                        'shape': temp_piece['shape'], 'rotation': 0, 'x': 3, 'y': 3, 'color': temp_piece['color']
-                                    };
-                                }
-                                swap_hold_avail = false;
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                    if (e == Config.KEYBINDS['pause']) {
-                        paused = !paused;
-                    } else if (e == Config.KEYBINDS['restart']) {
-                        // add restart functionality
-                    }
+        if (!e.repeat && !game_over && !ready_go_screen) {
+            if (!paused) {
+                switch (e.key) {
+                    case Config.KEYBINDS['move_left']:
+                        last_move_side_pressed = now;
+                        holding_move_left = true;
+                        break;
+                    case Config.KEYBINDS['move_right']:
+                        last_move_side_pressed = now;
+                        holding_move_right = true;
+                        break;
+                    case Config.KEYBINDS['softdrop']:
+                        holding_softdrop = true;
+                        break;
+                    case Config.KEYBINDS['harddrop']:
+                        pressed_harddrop = true;
+                        break;
+                    case Config.KEYBINDS['rotate_right']:
+                        pressed_rotate_right = true;
+                        break;
+                    case Config.KEYBINDS['rotate_left']:
+                        pressed_rotate_left = true;
+                        break;
+                    case Config.KEYBINDS['hold']:
+                        pressed_hold = true;
+                        break;
+                    default:
+                        break;
+                }
+                if (e == Config.KEYBINDS['pause']) {
+                    paused = !paused;
+                } else if (e == Config.KEYBINDS['restart']) {
+                    // restart game
                 }
             }
         }
+
     });
-
-    // key pressed
-
-
 }
 
 // returns true if mved successfully, false otherwise
@@ -352,29 +317,24 @@ function rotate_piece(board, piece, adj_rot) {
 
 // returns true if the given position with adjx and y is within the board
 function is_valid_position(board, piece, adjx = 0, adjy = 0) {
-    try {
-        let template = Pieces.PIECE_SHAPES[piece['shape']][piece['rotation']];
-        for (let yrow = 0; yrow < template.length; yrow++) {
-            for (let xcol = 0; xcol < template[0].length; xcol++) {
-                let piece_x = xcol + piece['x'] + adjx;
-                let piece_y = yrow + piece['y'] + adjy;
-                let is_above_board = piece_y < 0;
-                if (is_above_board || template[yrow][xcol] == Config.BLANK) {
-                    continue;
-                }
-                if (!is_on_board(piece_y, piece_x)) {
-                    return false;
-                }
-                if (board[piece_y][piece_x] != Config.BLANK) {
-                    return false;
-                }
+    let template = Pieces.PIECE_SHAPES[piece['shape']][piece['rotation']];
+    for (let yrow = 0; yrow < template.length; yrow++) {
+        for (let xcol = 0; xcol < template[0].length; xcol++) {
+            let piece_x = xcol + piece['x'] + adjx;
+            let piece_y = yrow + piece['y'] + adjy;
+            let is_above_board = piece_y < 0;
+            if (is_above_board || template[yrow][xcol] == Config.BLANK) {
+                continue;
+            }
+            if (!is_on_board(piece_y, piece_x)) {
+                return false;
+            }
+            if (board[piece_y][piece_x] != Config.BLANK) {
+                return false;
             }
         }
-        return true;
-    } catch (e) {
-        console.error(board);
-        console.error(piece);
     }
+    return true;
 }
 
 
@@ -468,7 +428,7 @@ function draw_text(ctx, text, font, size, color, x, y, align = "center", baselin
 }
 
 function draw_score(score) {
-    let str = score.toString()
+    let str = score.toString();
     str = str.padStart(7, "0");
 
     scoreTextctx.clearRect(0, 0, scoreTextCanvas.width, scoreTextCanvas.height);
@@ -646,40 +606,97 @@ function get_next_piece() {
 }
 
 function handle_piece_movement() {
-    if (inital_move_side_done && now - last_move_side_pressed > Config.MOVE_SIDEWAYS_OFFSET) {
-        if ((moving_left || moving_right) && now - last_move_side_time > Config.MOVE_SIDEWAYS_FREQ) {
-            if (moving_left) {
-                last_action = "move_left";
-                move_piece(board, curr_piece, -1, 0);
-            } else if (moving_right) {
-                last_action = "move_right";
-                move_piece(board, curr_piece, 1, 0);
+    if (holding_move_left || holding_move_right) {
+        if (!initial_move_side_done) {
+            if (holding_move_left) {
+                if(move_piece(board, curr_piece, -1, 0)){
+                    // piece_moved = true;
+                    last_move_side_time = now;
+                }
             }
-            last_move_side_time = now;
+            if(holding_move_right){
+                if(move_piece(board, curr_piece, 1, 0)){
+                    // piece_moved = true;
+                    last_move_side_time = now;
+                }
+            }
+            initial_move_side_done = true;
+            last_move_side_pressed = now;
+        } else if (now - last_move_side_pressed > Config.MOVE_SIDEWAYS_OFFSET && now - last_move_side_time > Config.MOVE_SIDEWAYS_FREQ) {
+            if (holding_move_left) {
+                if(move_piece(board, curr_piece, -1, 0)){
+                    // piece_moved = true;
+                    last_move_side_time = now;
+                }
+            }
+            if(holding_move_right){
+                if(move_piece(board, curr_piece, 1, 0)){
+                    // piece_moved = true;
+                    last_move_side_time = now;
+                }
+            }
         }
     }
-    // continue moving down if key is held (softdrop)
-    if (moving_down && now - last_move_down_time > Config.MOVE_DOWN_FREQ) {
-        last_action = "softdrop";
-        lines_moved = 1;
-        move_piece(board, curr_piece, 0, 1);
-        last_move_down_time = now;
-        last_fall_time = now;
+    if (holding_softdrop) {
+        if (now - last_move_down_time > Config.MOVE_DOWN_FREQ) {
+            if(move_piece(board, curr_piece, 0, 1)){
+                down_movement_occured = true;
+                down_movement_type = "Softdrop";
+                down_movement_lines = 1;
+                last_move_down_time = now;
+                last_fall_time = now;
+            }
+        }
+    }
+    if (pressed_harddrop) {
+        let i = 1;
+        for (i = 1; i < Config.BOARD_HEIGHT; i++) {
+            if (!is_valid_position(board, curr_piece, 0, i)) {
+                break;
+            }
+        }
+        move_piece(board, curr_piece, 0, i - 1);
+        down_movement_occured = true;
+        down_movement_type = "Harddrop";
+        down_movement_lines = i - 1;
+        piece_placed = true;
+        pressed_harddrop = false;
+    }
+    if (pressed_rotate_left) {
+        rotate_piece(board, curr_piece, -1);
+        rotation_before_down_movement_occured = true;
+        rotation_before_down_movement_type = "Left";
+        pressed_rotate_left = false;
+    }
+    if (pressed_rotate_right) {
+        rotate_piece(board, curr_piece, 1);
+        rotation_before_down_movement_occured = true;
+        rotation_before_down_movement_type = "Right";
+        pressed_rotate_right = false;
+    }
+    if (pressed_hold) {
+        if (swap_hold_avail) {
+            let temp_piece = held_piece;
+            held_piece = {
+                'shape': curr_piece['shape'], 'rotation': 0, 'x': 3, 'y': 3, 'color': curr_piece['color']
+            };
+            if (temp_piece != null) {
+                curr_piece = temp_piece;
+            }
+            piece_held_this_turn = true;
+            swap_hold_avail = false;
+        }
+        pressed_hold = false;
     }
     // let piece fall naturally
     if (now - last_fall_time > Config.FALL_FREQ) {
-        //solidify piece
-        if (is_valid_position(board, curr_piece, 0, 1)) {
-            last_action = "move_down";
-            lines_moved = 1;
-            curr_piece['y'] += 1;
+        if (move_piece(board, curr_piece, 0, 1)) {
+            down_movement_occured = true;
+            down_movement_type = "Natural";
+            down_movement_lines = 1;
             last_fall_time = now;
         } else {
-            placed_piece = curr_piece;
             piece_placed = true;
-            moving_down = false;
-            moving_left = false;
-            moving_right = false;
         }
     }
 }
@@ -697,8 +714,20 @@ function countdown_ready_go() {
     }
 }
 
-function compute_clear_action(linesCleared, piece, board, last_action, harddropped) {
-    let action = "None";
+function update_score(linesCleared, piece, board, last_action, harddropped) {
+    let curr_clear_action = "None";
+
+    // check t-spin:
+    if (piece['shape'] == 'T' && last_action == "rotation") {
+        // 3 - corner rule
+        let num_corners = num_tspin_corners();
+        if (num_corners == 3) {
+
+        } else if (num_corners == 2) {
+
+        }
+    }
+
     // if (harddropped) {
     //     score += lines_moved * Config.ACTION_SCORE['Harddrop'];
     // }
@@ -715,59 +744,60 @@ function compute_clear_action(linesCleared, piece, board, last_action, harddropp
     } else if (linesCleared == 1) {
         // check PC
         if (board_empty) {
-            action = "Single PC";
+            curr_clear_action = "Single PC";
         } else if (last_action == "rotate_left" || last_action == "rotate_right" && piece['shape'] == 'T') {
             //check for 
             // tspin no lines
             // mini tspin no lines
         } else {
-            action = "Single";
+            curr_clear_action = "Single";
         }
     } else if (linesCleared == 2) {
         // check PC
         if (board_empty) {
-            action = "Double PC";
+            curr_clear_action = "Double PC";
         } else if (last_action == "rotate_left" || last_action == "rotate_right" && piece['shape'] == 'T') {
             //check for 
             // tspin double
             // mini tspin double
         } else {
-            action = "Double";
+            curr_clear_action = "Double";
         }
     } else if (linesCleared == 3) {
         // check PC
         if (board_empty) {
-            action = "Triple PC";
+            curr_clear_action = "Triple PC";
         } else if (last_action == "rotate_left" || last_action == "rotate_right" && piece['shape'] == 'T') {
             //check for 
             // tspin trple
             // mini tspin triple
         } else {
-            action = "Triple";
+            curr_clear_action = "Triple";
         }
     } else if (linesCleared == 4) {
         if (board_empty) {
-            action = "Tetris PC";
+            curr_clear_action = "Tetris PC";
         } else {
-            action = "Tetris";
+            curr_clear_action = "Tetris";
         }
     }
-    let tempScore = Config.ACTION_SCORE[action];
-    let difficult = Config.ACTION_DIFFICULTY[action];
-    if (clearAction == action) {
-        if(action == "Tetris PC"){
+    let tempScore = Config.ACTION_SCORE[curr_clear_action];
+    let difficult = Config.ACTION_DIFFICULTY[curr_clear_action];
+    if (prev_clear_action == curr_clear_action) {
+        if (curr_clear_action == "Tetris PC") {
             tempScore = Config.ACTION_SCORE['B2B Tetris PC'];
-        }else if(difficult){
+        } else if (difficult) {
             tempScore *= 1.5;
         }
     }
-    if (clearAction != "None") {
+    if (prev_clear_action != "None") {
         currentCombo += 1;
         if (currentCombo > maxCombo) {
             maxCombo = currentCombo;
         }
         tempScore += Config.ACTION_SCORE['Combo'];
     }
+    prev_clear_action = curr_clear_action;
     tempScore *= level;
     score += tempScore;
 }
@@ -784,16 +814,21 @@ function board_empty(board) {
 }
 
 function update_board() {
+    if(down_movement_occured){
+        
+    }
 
+    // only check lines cleared and score when any down movement is done
+    // keep track of last rotation and last down movement.
+    // if rotation is done right before down movement, it could count for tspins.
+    // need to know which rotation test tspin completed. if rotation test was right before piece placed, could count as tspin.
 
     let linesCleared = remove_complete_lines(board);
-    compute_clear_action(linesCleared, placed_piece, board, last_action, harddropped);
+    // update_score(linesCleared, placed_piece, board, last_action, harddropped, softdropped);
 
-    // linesCleared += remove_complete_lines(board);
+    totalLinesCleared += linesCleared;
     level = Math.floor(totalLinesCleared / 10);
-    // if (curr_piece != null) {
-    //     console.log(curr_piece['shape']);
-    // }
+
     if (piece_placed) {
         if (!is_valid_position(board, curr_piece, 0, 0)) {
             game_over = true;
@@ -807,15 +842,11 @@ function update_board() {
             last_move_side_time = now;
             last_move_side_pressed = now;
             last_move_down_time = now;
-            harddropped = false;
-            last_action = null;
-            lines_moved = 0;
         }
     }
     if (piece_held_this_turn) {
         curr_piece = null;
         piece_held_this_turn = false;
-        last_action == null;
     }
 }
 
