@@ -54,6 +54,7 @@ export const
     },
 
     ACTION_DIFFICULTY = {
+        'None': false,
         'Single': false,
         'Double': false,
         'Triple': false,
@@ -67,7 +68,12 @@ export const
         'T-Spin Triple': true,
         'Softdrop': false,
         'Harddrop': false,
-        'Combo': false
+        'Combo': false,
+        'Single PC': true,
+        'Double PC': true,
+        'Triple PC': true,
+        'Tetris PC': true,
+        'B2B Tetris PC': true
     },
 
 

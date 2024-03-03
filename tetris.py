@@ -182,7 +182,6 @@ WALLKICK_I = [
     [(0, 0), (-1, 0), (+2, 0), (-1, +2), (+2, -1)]  # 0->L   0->3
 ]
 
-
 def main():
     global CLOCK, SCREEN
     pygame.init()
@@ -422,6 +421,7 @@ def rotate_piece(board, piece, adj_rot):
             if is_valid_position(board, piece):
                 break
             # test didnt work, undo
+
             piece['rotation'], _ = rot
             piece['x'] -= testx
             piece['y'] += testy

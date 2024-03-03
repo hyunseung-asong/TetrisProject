@@ -2,6 +2,7 @@ import * as Pieces from './pieces.js';
 import * as Config from './config.js';
 
 const maindiv = document.getElementById("main");
+const bgdiv = document.getElementById("background");
 const bgCanvas = document.getElementById("bgCanvas");
 const bgctx = bgCanvas.getContext("2d");
 const gameCanvas = document.getElementById("gameCanvas");
@@ -31,6 +32,10 @@ window.addEventListener('load', () => {
         console.log("clicked");
         maindiv.focus();
     });
+    bgdiv.addEventListener("click", () => {
+        console.log("clicked");
+        maindiv.focus();
+    });
 });
 
 const interval = 1000 / Config.FPS;;
@@ -40,7 +45,6 @@ let delta;
 
 let board;
 let piece_bag;
-let placed_piece;
 let next_pieces;
 let curr_piece;
 let held_piece;
@@ -76,12 +80,14 @@ let totalLinesCleared;
 let level;
 let currentCombo;
 let maxCombo;
+let tst_or_fin_kick;
 let piece_moved;
-let rotation_before_down_movement_occured;
-let rotation_before_down_movement_type;
+let rotation_before_movement_occured;
 let down_movement_occured;
 let down_movement_type;
 let down_movement_lines;
+let back_to_back;
+let prev_clear_action;
 
 
 const font = new FontFace(Config.TEXT_FONT, 'url(' + Config.TEXT_FONT_LOCATION + ')');
@@ -109,7 +115,6 @@ function init() {
         next_pieces.push(get_new_piece(piece_bag));
     }
     held_piece = null;
-    placed_piece = null;
 
     piece_held_this_turn = false;
     swap_hold_avail = true;
@@ -118,15 +123,17 @@ function init() {
     score = 0;
     totalLinesCleared = 0;
     level = 1;
-    currentCombo = 0;
+    currentCombo = -1;
     maxCombo = 0;
 
+    tst_or_fin_kick = false;
     piece_moved = false;
-    rotation_before_down_movement_occured = false;
-    rotation_before_down_movement_type = "None";
+    rotation_before_movement_occured = false;
     down_movement_occured = false;
     down_movement_type = "None";
     down_movement_lines = 0;
+    back_to_back = true;
+    prev_clear_action = "None";
 
     initial_move_side_done = false;
     last_move_down_time = Date.now();
@@ -174,9 +181,9 @@ function update() {
         }
         update_canvases();
     }
-    if (!game_over) {
-        requestAnimationFrame(update);
-    }
+    // if (!game_over) {
+    requestAnimationFrame(update);
+    // }
 }
 
 function addKeyEventListeners() {
@@ -232,11 +239,12 @@ function addKeyEventListeners() {
                     default:
                         break;
                 }
-                if (e == Config.KEYBINDS['pause']) {
-                    paused = !paused;
-                } else if (e == Config.KEYBINDS['restart']) {
-                    // restart game
-                }
+            }
+            if (e.key == Config.KEYBINDS['pause']) {
+                paused = !paused;
+                console.log("paused: " + paused);
+            } else if (e == Config.KEYBINDS['restart']) {
+                // restart game
             }
         }
 
@@ -248,6 +256,8 @@ function move_piece(board, piece, adjx, adjy) {
     if (is_valid_position(board, piece, adjx, adjy)) {
         piece['x'] += adjx;
         piece['y'] += adjy;
+        // movement_occured = true;
+        rotation_before_movement_occured = false;
         return true;
     }
     return false;
@@ -290,6 +300,10 @@ function rotate_piece(board, piece, adj_rot) {
             piece['x'] += testx;
             piece['y'] -= testy; // -= because positive y in test goes up
             if (is_valid_position(board, piece)) {
+                if (piece['shape'] == 'T' && (i == 3 || i == 7) && a == 4) {
+                    tst_or_fin_kick == true; // reset when piece placed or different rotation done
+                }
+                rotation_before_movement_occured = true;
                 break;
             }
             // test didnt work, undo
@@ -543,6 +557,18 @@ function draw_piece_shadow(board, piece) {
     draw_piece(gamectx, shadow, shadow['x'], shadow['y']);
 }
 
+function copy_board(board) {
+    let b = [];
+    for (let yrow = 0; yrow < Config.BOARD_HEIGHT; yrow++) {
+        let row = [];
+        for (let xcol = 0; xcol < Config.BOARD_WIDTH; xcol++) {
+            row.push(board[yrow][xcol]);
+        }
+        b.push(row);
+    }
+    return b;
+}
+
 function print_board(board) {
     let b = ""
     for (let yrow = 0; yrow < board.length; yrow++) {
@@ -609,13 +635,13 @@ function handle_piece_movement() {
     if (holding_move_left || holding_move_right) {
         if (!initial_move_side_done) {
             if (holding_move_left) {
-                if(move_piece(board, curr_piece, -1, 0)){
+                if (move_piece(board, curr_piece, -1, 0)) {
                     // piece_moved = true;
                     last_move_side_time = now;
                 }
             }
-            if(holding_move_right){
-                if(move_piece(board, curr_piece, 1, 0)){
+            if (holding_move_right) {
+                if (move_piece(board, curr_piece, 1, 0)) {
                     // piece_moved = true;
                     last_move_side_time = now;
                 }
@@ -624,13 +650,13 @@ function handle_piece_movement() {
             last_move_side_pressed = now;
         } else if (now - last_move_side_pressed > Config.MOVE_SIDEWAYS_OFFSET && now - last_move_side_time > Config.MOVE_SIDEWAYS_FREQ) {
             if (holding_move_left) {
-                if(move_piece(board, curr_piece, -1, 0)){
+                if (move_piece(board, curr_piece, -1, 0)) {
                     // piece_moved = true;
                     last_move_side_time = now;
                 }
             }
-            if(holding_move_right){
-                if(move_piece(board, curr_piece, 1, 0)){
+            if (holding_move_right) {
+                if (move_piece(board, curr_piece, 1, 0)) {
                     // piece_moved = true;
                     last_move_side_time = now;
                 }
@@ -639,7 +665,7 @@ function handle_piece_movement() {
     }
     if (holding_softdrop) {
         if (now - last_move_down_time > Config.MOVE_DOWN_FREQ) {
-            if(move_piece(board, curr_piece, 0, 1)){
+            if (move_piece(board, curr_piece, 0, 1)) {
                 down_movement_occured = true;
                 down_movement_type = "Softdrop";
                 down_movement_lines = 1;
@@ -663,26 +689,22 @@ function handle_piece_movement() {
         pressed_harddrop = false;
     }
     if (pressed_rotate_left) {
+        tst_or_fin_kick = false;
         rotate_piece(board, curr_piece, -1);
-        rotation_before_down_movement_occured = true;
-        rotation_before_down_movement_type = "Left";
         pressed_rotate_left = false;
     }
     if (pressed_rotate_right) {
+        tst_or_fin_kick = false;
         rotate_piece(board, curr_piece, 1);
-        rotation_before_down_movement_occured = true;
-        rotation_before_down_movement_type = "Right";
         pressed_rotate_right = false;
     }
     if (pressed_hold) {
         if (swap_hold_avail) {
-            let temp_piece = held_piece;
-            held_piece = {
+            let temp_piece = held_piece; // temp = i
+            held_piece = { // t
                 'shape': curr_piece['shape'], 'rotation': 0, 'x': 3, 'y': 3, 'color': curr_piece['color']
             };
-            if (temp_piece != null) {
-                curr_piece = temp_piece;
-            }
+            curr_piece = temp_piece;
             piece_held_this_turn = true;
             swap_hold_avail = false;
         }
@@ -691,9 +713,6 @@ function handle_piece_movement() {
     // let piece fall naturally
     if (now - last_fall_time > Config.FALL_FREQ) {
         if (move_piece(board, curr_piece, 0, 1)) {
-            down_movement_occured = true;
-            down_movement_type = "Natural";
-            down_movement_lines = 1;
             last_fall_time = now;
         } else {
             piece_placed = true;
@@ -714,98 +733,157 @@ function countdown_ready_go() {
     }
 }
 
-function update_score(linesCleared, piece, board, last_action, harddropped) {
+function num_tspin_corners(board, piece) {
+    if (piece['shape'] != 'T') {
+        return [0, 0];
+    }
+    // (x,y)
+    // (0,0) (1,0) (2,0)
+    //   ^           ^
+    // (0,1) (1,1) (2,1) 
+    //   v           v
+    // (0,2) (1,2) (2,2)
+    let cornersFilled = 0;
+    let cornersFacing = 0;
+    let corners = [[0, 0], [2, 0], [0, 2], [2, 2]];
+    print_board(board);
+    for (let i = 0; i < corners.length; i++) {
+        let cornerx = piece['x'] + corners[i][1];
+        let cornery = piece['y'] + corners[i][0];
+
+        // TODO: IF CORNER IS THE EDGE OF BOARD (AKA OUT OF BOUNDS) IT SHOULD COUNT AS FILLED
+        if (cornerx >= Config.BOARD_WIDTH || cornery >= Config.BOARD_HEIGHT) {
+            continue;
+        }
+        console.log(cornerx + ", " + cornery + " is " + (board[cornery][cornerx] != Config.BLANK));
+        if (board[cornery][cornerx] != Config.BLANK) {
+            cornersFilled += 1;
+        }
+    }
+
+    let rotation = piece['rotation'];
+    console.log("rotation: " + rotation);
+    let checkCorners = { 0: [0, 1], 1: [0, 3], 2: [2, 3], 3: [0, 2] };
+    let piecex = piece['x'];
+    let piecey = piece['y'];
+    // console.log("piecex: " + piecex + ", piecey: " + piecey);
+    if (piecey + corners[checkCorners[rotation][0]][1] < Config.BOARD_HEIGHT && piecex + corners[checkCorners[rotation][0]][0] < Config.BOARD_WIDTH) {
+
+        console.log("y: " + (piecey + corners[checkCorners[rotation][0]][1]) + ", x: " + (piecex + corners[checkCorners[rotation][0]][0]));
+        if (board[piecey + corners[checkCorners[rotation][0]][1]][piecex + corners[checkCorners[rotation][0]][0]] != Config.BLANK) {
+            cornersFacing += 1;
+        }
+    }
+    if (piecey + corners[checkCorners[rotation][1]][1] < Config.BOARD_HEIGHT && piecex + corners[checkCorners[rotation][1]][0] < Config.BOARD_WIDTH) {
+
+        console.log("y: " + (piecey + corners[checkCorners[rotation][1]][1]) + ", x: " + (piecex + corners[checkCorners[rotation][1]][0]));
+        if (board[piecey + corners[checkCorners[rotation][1]][1]][piecex + corners[checkCorners[rotation][1]][0]] != Config.BLANK) {
+            cornersFacing += 1;
+        }
+    }
+
+    return [cornersFilled, cornersFacing];
+
+}
+
+function update_score(linesCleared, piece, board, drop_type, lines_moved) {
     let curr_clear_action = "None";
-
-    // check t-spin:
-    if (piece['shape'] == 'T' && last_action == "rotation") {
-        // 3 - corner rule
-        let num_corners = num_tspin_corners();
-        if (num_corners == 3) {
-
-        } else if (num_corners == 2) {
-
+    if (drop_type == "Softdrop") {
+        score += Config.ACTION_SCORE["Softdrop"];
+        return;
+    } else if (drop_type == "Harddrop") {
+        score += Config.ACTION_SCORE["Harddrop"] * lines_moved;
+        return;
+    } else {
+        if (piece['shape'] == 'T' && rotation_before_movement_occured) {
+            console.log("in the tspin tester");
+            let tspin_calc = num_tspin_corners(board, piece);
+            let cornersFilled = tspin_calc[0];
+            let cornersFacing = tspin_calc[1];
+            console.log("cornersfilled: " + cornersFilled + ", cornersFacing: " + cornersFacing);
+            if (cornersFacing == 2 || tst_or_fin_kick) {
+                if (cornersFilled == 3 || cornersFilled == 4) {
+                    if (linesCleared == 0) {
+                        curr_clear_action = "T-Spin no lines";
+                    } else if (linesCleared == 1) {
+                        curr_clear_action = "T-Spin Single";
+                    } else if (linesCleared == 2) {
+                        curr_clear_action = "T-Spin Double";
+                    } else if (linesCleared == 3) {
+                        curr_clear_action = "T-Spin Triple";
+                    }
+                }
+            } else if (cornersFacing == 1) {
+                if (cornersFilled == 3 || cornersFilled == 4) {
+                    if (linesCleared == 0) {
+                        curr_clear_action = "Mini T-Spin no lines";
+                    } else if (linesCleared == 1) {
+                        curr_clear_action = "Mini T-Spin Single";
+                    } else if (linesCleared == 2) {
+                        curr_clear_action = "Mini T-Spin Double";
+                    }
+                }
+            }
+        } else if (curr_clear_action == "None") { // did not satisfy tspin
+            if (linesCleared == 1) {
+                if (board_empty(board)) {
+                    curr_clear_action = "Single PC";
+                } else {
+                    curr_clear_action = "Single";
+                }
+            } else if (linesCleared == 2) {
+                if (board_empty(board)) {
+                    curr_clear_action = "Double PC";
+                } else {
+                    curr_clear_action = "Double";
+                }
+            } else if (linesCleared == 3) {
+                if (board_empty(board)) {
+                    curr_clear_action = "Triple PC";
+                } else {
+                    curr_clear_action = "Triple";
+                }
+            } else if (linesCleared == 4) {
+                if (board_empty(board)) {
+                    curr_clear_action = "Tetris PC";
+                } else {
+                    curr_clear_action = "Tetris";
+                }
+            }
         }
     }
 
-    // if (harddropped) {
-    //     score += lines_moved * Config.ACTION_SCORE['Harddrop'];
-    // }
-    // if (last_action == "softdrop") {
-    //     action = "Softdrop";
-    //     return;
-    // } 
-    if (linesCleared == 0) {
-        if (last_action == "rotate_left" || last_action == "rotate_right" && piece['shape'] == 'T') {
-            //check for 
-            // tspin no lines
-            // mini tspin no lines
-        }
-    } else if (linesCleared == 1) {
-        // check PC
-        if (board_empty) {
-            curr_clear_action = "Single PC";
-        } else if (last_action == "rotate_left" || last_action == "rotate_right" && piece['shape'] == 'T') {
-            //check for 
-            // tspin no lines
-            // mini tspin no lines
-        } else {
-            curr_clear_action = "Single";
-        }
-    } else if (linesCleared == 2) {
-        // check PC
-        if (board_empty) {
-            curr_clear_action = "Double PC";
-        } else if (last_action == "rotate_left" || last_action == "rotate_right" && piece['shape'] == 'T') {
-            //check for 
-            // tspin double
-            // mini tspin double
-        } else {
-            curr_clear_action = "Double";
-        }
-    } else if (linesCleared == 3) {
-        // check PC
-        if (board_empty) {
-            curr_clear_action = "Triple PC";
-        } else if (last_action == "rotate_left" || last_action == "rotate_right" && piece['shape'] == 'T') {
-            //check for 
-            // tspin trple
-            // mini tspin triple
-        } else {
-            curr_clear_action = "Triple";
-        }
-    } else if (linesCleared == 4) {
-        if (board_empty) {
-            curr_clear_action = "Tetris PC";
-        } else {
-            curr_clear_action = "Tetris";
-        }
-    }
     let tempScore = Config.ACTION_SCORE[curr_clear_action];
     let difficult = Config.ACTION_DIFFICULTY[curr_clear_action];
-    if (prev_clear_action == curr_clear_action) {
+    if (difficult && back_to_back) {
         if (curr_clear_action == "Tetris PC") {
             tempScore = Config.ACTION_SCORE['B2B Tetris PC'];
         } else if (difficult) {
             tempScore *= 1.5;
         }
     }
-    if (prev_clear_action != "None") {
+    if (linesCleared != 0) {
         currentCombo += 1;
         if (currentCombo > maxCombo) {
             maxCombo = currentCombo;
         }
-        tempScore += Config.ACTION_SCORE['Combo'];
+        tempScore += Config.ACTION_SCORE['Combo'] * currentCombo;
+    } else {
+        currentCombo = -1;
     }
-    prev_clear_action = curr_clear_action;
     tempScore *= level;
     score += tempScore;
+    prev_clear_action = curr_clear_action;
+    back_to_back = difficult;
+
+    console.log("curr: " + curr_clear_action + ", combo: " + currentCombo + ", level: " + level);
 }
 
 function board_empty(board) {
     for (let yrow = Config.BOARD_HEIGHT - 1; yrow >= 0; yrow--) {
         for (let xcol = 0; xcol < Config.BOARD_WIDTH; xcol++) {
             if (board[yrow][xcol] != Config.BLANK) {
+                // console.log(xcol + ", " + yrow + " is not blank");
                 return false;
             }
         }
@@ -814,20 +892,16 @@ function board_empty(board) {
 }
 
 function update_board() {
-    if(down_movement_occured){
-        
-    }
-
     // only check lines cleared and score when any down movement is done
     // keep track of last rotation and last down movement.
     // if rotation is done right before down movement, it could count for tspins.
     // need to know which rotation test tspin completed. if rotation test was right before piece placed, could count as tspin.
-
-    let linesCleared = remove_complete_lines(board);
-    // update_score(linesCleared, placed_piece, board, last_action, harddropped, softdropped);
-
-    totalLinesCleared += linesCleared;
-    level = Math.floor(totalLinesCleared / 10);
+    if (down_movement_occured) {
+        update_score(0, null, board, down_movement_type, down_movement_lines);
+        down_movement_occured = false;
+        down_movement_type = "None";
+        down_movement_lines = 0;
+    }
 
     if (piece_placed) {
         if (!is_valid_position(board, curr_piece, 0, 0)) {
@@ -835,6 +909,11 @@ function update_board() {
             // console.log("gg");
         } else {
             add_to_board(board, curr_piece);
+            let temp_board = copy_board(board);
+            let linesCleared = remove_complete_lines(board);
+            update_score(linesCleared, curr_piece, temp_board, "None", false);
+            totalLinesCleared += linesCleared;
+            level = Math.floor(totalLinesCleared / 10);
             curr_piece = null;
             piece_placed = false;
             swap_hold_avail = true;
@@ -842,10 +921,10 @@ function update_board() {
             last_move_side_time = now;
             last_move_side_pressed = now;
             last_move_down_time = now;
+            tst_or_fin_kick = false;
         }
     }
     if (piece_held_this_turn) {
-        curr_piece = null;
         piece_held_this_turn = false;
     }
 }
