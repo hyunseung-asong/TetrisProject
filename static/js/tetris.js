@@ -29,11 +29,9 @@ window.addEventListener('load', () => {
     maindiv.focus();
     addKeyEventListeners();
     maindiv.addEventListener("click", () => {
-        console.log("clicked");
         maindiv.focus();
     });
     bgdiv.addEventListener("click", () => {
-        console.log("clicked");
         maindiv.focus();
     });
 });
@@ -132,7 +130,7 @@ function init() {
     down_movement_occured = false;
     down_movement_type = "None";
     down_movement_lines = 0;
-    back_to_back = true;
+    back_to_back = false;
     prev_clear_action = "None";
 
     initial_move_side_done = false;
@@ -242,7 +240,6 @@ function addKeyEventListeners() {
             }
             if (e.key == Config.KEYBINDS['pause']) {
                 paused = !paused;
-                console.log("paused: " + paused);
             } else if (e == Config.KEYBINDS['restart']) {
                 // restart game
             }
@@ -257,7 +254,6 @@ function move_piece(board, piece, adjx, adjy) {
         piece['x'] += adjx;
         piece['y'] += adjy;
         // movement_occured = true;
-        rotation_before_movement_occured = false;
         return true;
     }
     return false;
@@ -300,8 +296,8 @@ function rotate_piece(board, piece, adj_rot) {
             piece['x'] += testx;
             piece['y'] -= testy; // -= because positive y in test goes up
             if (is_valid_position(board, piece)) {
-                if (piece['shape'] == 'T' && (i == 3 || i == 7) && a == 4) {
-                    tst_or_fin_kick == true; // reset when piece placed or different rotation done
+                if (piece['shape'] == 'T' && (i == 0 || i == 3 || i == 4 || i == 7) && a == 4) {
+                    tst_or_fin_kick = true; // reset when piece placed or different rotation done
                 }
                 rotation_before_movement_occured = true;
                 break;
@@ -623,6 +619,7 @@ function get_next_piece() {
         curr_piece = next_pieces.shift();
         if (!is_valid_position(board, curr_piece)) {
             move_piece(board, curr_piece, 0, -1);
+            rotation_before_movement_occured = false;
         }
         if (piece_bag.length == 0) {
             piece_bag = Object.keys(Pieces.PIECE_SHAPES);
@@ -636,13 +633,13 @@ function handle_piece_movement() {
         if (!initial_move_side_done) {
             if (holding_move_left) {
                 if (move_piece(board, curr_piece, -1, 0)) {
-                    // piece_moved = true;
+                    rotation_before_movement_occured = false;
                     last_move_side_time = now;
                 }
             }
             if (holding_move_right) {
                 if (move_piece(board, curr_piece, 1, 0)) {
-                    // piece_moved = true;
+                    rotation_before_movement_occured = false;
                     last_move_side_time = now;
                 }
             }
@@ -651,13 +648,13 @@ function handle_piece_movement() {
         } else if (now - last_move_side_pressed > Config.MOVE_SIDEWAYS_OFFSET && now - last_move_side_time > Config.MOVE_SIDEWAYS_FREQ) {
             if (holding_move_left) {
                 if (move_piece(board, curr_piece, -1, 0)) {
-                    // piece_moved = true;
+                    rotation_before_movement_occured = false;
                     last_move_side_time = now;
                 }
             }
             if (holding_move_right) {
                 if (move_piece(board, curr_piece, 1, 0)) {
-                    // piece_moved = true;
+                    rotation_before_movement_occured = false;
                     last_move_side_time = now;
                 }
             }
@@ -666,6 +663,7 @@ function handle_piece_movement() {
     if (holding_softdrop) {
         if (now - last_move_down_time > Config.MOVE_DOWN_FREQ) {
             if (move_piece(board, curr_piece, 0, 1)) {
+                rotation_before_movement_occured = false;
                 down_movement_occured = true;
                 down_movement_type = "Softdrop";
                 down_movement_lines = 1;
@@ -675,18 +673,24 @@ function handle_piece_movement() {
         }
     }
     if (pressed_harddrop) {
-        let i = 1;
-        for (i = 1; i < Config.BOARD_HEIGHT; i++) {
+        let i = 0;
+        for (i = 0; i < Config.BOARD_HEIGHT; i++) {
             if (!is_valid_position(board, curr_piece, 0, i)) {
                 break;
             }
         }
         move_piece(board, curr_piece, 0, i - 1);
-        down_movement_occured = true;
-        down_movement_type = "Harddrop";
-        down_movement_lines = i - 1;
+        if (i - 1 > 0) {
+            rotation_before_movement_occured = false;
+            down_movement_occured = true;
+            down_movement_type = "Harddrop";
+            down_movement_lines = i - 1;
+        } else {
+            // didnt move
+        }
         piece_placed = true;
         pressed_harddrop = false;
+
     }
     if (pressed_rotate_left) {
         tst_or_fin_kick = false;
@@ -713,6 +717,7 @@ function handle_piece_movement() {
     // let piece fall naturally
     if (now - last_fall_time > Config.FALL_FREQ) {
         if (move_piece(board, curr_piece, 0, 1)) {
+            rotation_before_movement_occured = false;
             last_fall_time = now;
         } else {
             piece_placed = true;
@@ -746,37 +751,29 @@ function num_tspin_corners(board, piece) {
     let cornersFilled = 0;
     let cornersFacing = 0;
     let corners = [[0, 0], [2, 0], [0, 2], [2, 2]];
-    print_board(board);
     for (let i = 0; i < corners.length; i++) {
         let cornerx = piece['x'] + corners[i][1];
         let cornery = piece['y'] + corners[i][0];
+        if (-1 <= cornerx <= Config.BOARD_WIDTH && -1 <= cornery <= Config.BOARD_HEIGHT) {
+            if (cornerx == -1 || cornerx == Config.BOARD_WIDTH || cornery == -1 || cornery == Config.BOARD_HEIGHT) {
+                cornersFilled += 1;
+            } else if (board[cornery][cornerx] != Config.BLANK) {
+                cornersFilled += 1;
+            }
+        }
 
-        // TODO: IF CORNER IS THE EDGE OF BOARD (AKA OUT OF BOUNDS) IT SHOULD COUNT AS FILLED
-        if (cornerx >= Config.BOARD_WIDTH || cornery >= Config.BOARD_HEIGHT) {
-            continue;
-        }
-        console.log(cornerx + ", " + cornery + " is " + (board[cornery][cornerx] != Config.BLANK));
-        if (board[cornery][cornerx] != Config.BLANK) {
-            cornersFilled += 1;
-        }
     }
 
     let rotation = piece['rotation'];
-    console.log("rotation: " + rotation);
     let checkCorners = { 0: [0, 1], 1: [0, 3], 2: [2, 3], 3: [0, 2] };
     let piecex = piece['x'];
     let piecey = piece['y'];
-    // console.log("piecex: " + piecex + ", piecey: " + piecey);
     if (piecey + corners[checkCorners[rotation][0]][1] < Config.BOARD_HEIGHT && piecex + corners[checkCorners[rotation][0]][0] < Config.BOARD_WIDTH) {
-
-        console.log("y: " + (piecey + corners[checkCorners[rotation][0]][1]) + ", x: " + (piecex + corners[checkCorners[rotation][0]][0]));
         if (board[piecey + corners[checkCorners[rotation][0]][1]][piecex + corners[checkCorners[rotation][0]][0]] != Config.BLANK) {
             cornersFacing += 1;
         }
     }
     if (piecey + corners[checkCorners[rotation][1]][1] < Config.BOARD_HEIGHT && piecex + corners[checkCorners[rotation][1]][0] < Config.BOARD_WIDTH) {
-
-        console.log("y: " + (piecey + corners[checkCorners[rotation][1]][1]) + ", x: " + (piecex + corners[checkCorners[rotation][1]][0]));
         if (board[piecey + corners[checkCorners[rotation][1]][1]][piecex + corners[checkCorners[rotation][1]][0]] != Config.BLANK) {
             cornersFacing += 1;
         }
@@ -796,11 +793,9 @@ function update_score(linesCleared, piece, board, drop_type, lines_moved) {
         return;
     } else {
         if (piece['shape'] == 'T' && rotation_before_movement_occured) {
-            console.log("in the tspin tester");
             let tspin_calc = num_tspin_corners(board, piece);
             let cornersFilled = tspin_calc[0];
             let cornersFacing = tspin_calc[1];
-            console.log("cornersfilled: " + cornersFilled + ", cornersFacing: " + cornersFacing);
             if (cornersFacing == 2 || tst_or_fin_kick) {
                 if (cornersFilled == 3 || cornersFilled == 4) {
                     if (linesCleared == 0) {
@@ -852,20 +847,27 @@ function update_score(linesCleared, piece, board, drop_type, lines_moved) {
             }
         }
     }
-
+    let clearOutput = "";
     let tempScore = Config.ACTION_SCORE[curr_clear_action];
     let difficult = Config.ACTION_DIFFICULTY[curr_clear_action];
-    if (difficult && back_to_back) {
+    let b2bChainBreak = Config.ACTION_BACK_TO_BACK_CHAIN_BREAK[curr_clear_action];
+
+    if (back_to_back && difficult) {
+        clearOutput += "B2B ";
         if (curr_clear_action == "Tetris PC") {
             tempScore = Config.ACTION_SCORE['B2B Tetris PC'];
         } else if (difficult) {
             tempScore *= 1.5;
         }
     }
+    clearOutput += curr_clear_action;
     if (linesCleared != 0) {
         currentCombo += 1;
         if (currentCombo > maxCombo) {
             maxCombo = currentCombo;
+        }
+        if(currentCombo > 0){
+            clearOutput += " Combo " + currentCombo;
         }
         tempScore += Config.ACTION_SCORE['Combo'] * currentCombo;
     } else {
@@ -874,16 +876,22 @@ function update_score(linesCleared, piece, board, drop_type, lines_moved) {
     tempScore *= level;
     score += tempScore;
     prev_clear_action = curr_clear_action;
-    back_to_back = difficult;
 
-    console.log("curr: " + curr_clear_action + ", combo: " + currentCombo + ", level: " + level);
+    if (difficult) {
+        back_to_back = true;
+    } else if (b2bChainBreak) {
+        back_to_back = false;
+    }
+
+    if(clearOutput != "None"){
+        console.log(clearOutput);
+    }
 }
 
 function board_empty(board) {
     for (let yrow = Config.BOARD_HEIGHT - 1; yrow >= 0; yrow--) {
         for (let xcol = 0; xcol < Config.BOARD_WIDTH; xcol++) {
             if (board[yrow][xcol] != Config.BLANK) {
-                // console.log(xcol + ", " + yrow + " is not blank");
                 return false;
             }
         }
@@ -906,14 +914,13 @@ function update_board() {
     if (piece_placed) {
         if (!is_valid_position(board, curr_piece, 0, 0)) {
             game_over = true;
-            // console.log("gg");
         } else {
             add_to_board(board, curr_piece);
             let temp_board = copy_board(board);
             let linesCleared = remove_complete_lines(board);
             update_score(linesCleared, curr_piece, temp_board, "None", false);
             totalLinesCleared += linesCleared;
-            level = Math.floor(totalLinesCleared / 10);
+            level = Math.floor(totalLinesCleared / 10) + 1;
             curr_piece = null;
             piece_placed = false;
             swap_hold_avail = true;

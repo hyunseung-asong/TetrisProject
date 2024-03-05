@@ -76,6 +76,29 @@ export const
         'B2B Tetris PC': true
     },
 
+    ACTION_BACK_TO_BACK_CHAIN_BREAK = {
+        'None': false,
+        'Single': true,
+        'Double': true,
+        'Triple': true,
+        'Tetris': false,
+        'Mini T-Spin no lines': false,
+        'T-Spin no lines': false,
+        'Mini T-Spin Single': false,
+        'T-Spin Single': false,
+        'Mini T-Spin Double': false,
+        'T-Spin Double': false,
+        'T-Spin Triple': false,
+        'Softdrop': false,
+        'Harddrop': false,
+        'Combo': false,
+        'Single PC': false,
+        'Double PC': false,
+        'Triple PC': false,
+        'Tetris PC': false,
+        'B2B Tetris PC': false
+    },
+
 
 
 
