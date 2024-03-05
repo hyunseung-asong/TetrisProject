@@ -18,9 +18,6 @@
     margin: auto;
 }
 
-/* #main {
-    
-} */
 
 .vertical-container {
     float: left;
@@ -86,12 +83,13 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    border-style: none;
 }
 
-#gameStats {
+/* #gameStats {
     width: 251px;
     height: 150px;
-}
+} */
 
 #gameScore {
     position: absolute;

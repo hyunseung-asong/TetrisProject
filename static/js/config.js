@@ -1,4 +1,3 @@
-
 export const
     // base game
     BOARD_WIDTH = 10,
@@ -25,7 +24,7 @@ export const
     FPS = 60,
     READY_SCREEN_TIMER = 1 * 1000,
     MOVE_SIDEWAYS_OFFSET = 0.15 * 1000,
-    MOVE_SIDEWAYS_FREQ = 0.035 * 1000,
+    MOVE_SIDEWAYS_FREQ = 0.02 * 1000,
     MOVE_DOWN_FREQ = 0.04 * 1000,
     FALL_FREQ = 1.5 * 1000,
 
@@ -134,5 +133,5 @@ export const
     FONT_SIZE_SMALL = 24,
     FONT_SIZE_SMALLEST = 12,
     FONT_COLOR_YELLOW = 'rgba(238, 238, 00, 1)',
-    FONT_BACKGROUND_COLOR = 'rgba(155, 155, 155, 1)'
+    FONT_BACKGROUND_COLOR = 'rgba(155, 155, 155, 0.8)'
     ;

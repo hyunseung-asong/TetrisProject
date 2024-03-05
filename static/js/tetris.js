@@ -17,8 +17,10 @@ const holdTextCanvas = document.getElementById("holdTextCanvas");
 const holdTextctx = holdTextCanvas.getContext("2d");
 const queueTextCanvas = document.getElementById("queueTextCanvas");
 const queueTextctx = queueTextCanvas.getContext("2d");
-const gameStatsCanvas = document.getElementById("gameStatsCanvas");
-const gameStatsctx = gameStatsCanvas.getContext("2d");
+// const gameStatsCanvas = document.getElementById("gameStatsCanvas");
+// const gameStatsctx = gameStatsCanvas.getContext("2d");
+const restartButton = document.getElementById("restartButton");
+const settingsButton = document.getElementById("settingsButton");
 // draw_box(0, 0, Config.PIECE_COLORS['I']);
 // draw_box(1, 0, Config.PIECE_COLORS['I']);
 // draw_box(0, 1, Config.PIECE_COLORS['I']);
@@ -36,17 +38,31 @@ window.addEventListener('load', () => {
     });
 });
 
+restartButton.addEventListener('click', () => {
+    newgame = false;
+    init();
+});
+
+settingsButton.addEventListener('click', () => {
+    // config should be changed to json and be able to be read/write
+    // open up a settings menu where you can change config
+});
+
+// drawing timing variables
 const interval = 1000 / Config.FPS;;
 let now;
 let then;
 let delta;
 
+// tetris game states
+let newgame;
 let board;
 let piece_bag;
 let next_pieces;
 let curr_piece;
 let held_piece;
 
+// text drawing
 let score;
 let game_over;
 let paused;
@@ -55,6 +71,7 @@ let draw_ready;
 let draw_go;
 let ready_screen_time;
 
+// piece movement timer
 let initial_move_side_done;
 let last_move_down_time;
 let last_move_side_time;
@@ -74,18 +91,17 @@ let piece_placed;
 let swap_hold_avail;
 let piece_held_this_turn;
 
+// scoring and stats
 let totalLinesCleared;
 let level;
 let currentCombo;
 let maxCombo;
 let tst_or_fin_kick;
-let piece_moved;
 let rotation_before_movement_occured;
 let down_movement_occured;
 let down_movement_type;
 let down_movement_lines;
 let back_to_back;
-let prev_clear_action;
 
 
 const font = new FontFace(Config.TEXT_FONT, 'url(' + Config.TEXT_FONT_LOCATION + ')');
@@ -104,7 +120,7 @@ function init() {
         holdTextCanvas.width / 2, holdTextCanvas.height, "center", "bottom");
     draw_text(queueTextctx, "NEXT", Config.TEXT_FONT, Config.FONT_SIZE_SMALL, Config.FONT_COLOR_YELLOW,
         queueTextCanvas.width / 2, queueTextCanvas.height, "center", "bottom");
-
+    newgame = true;
     board = new_board();
     piece_bag = Object.keys(Pieces.PIECE_SHAPES);
     curr_piece = null;
@@ -125,13 +141,11 @@ function init() {
     maxCombo = 0;
 
     tst_or_fin_kick = false;
-    piece_moved = false;
     rotation_before_movement_occured = false;
     down_movement_occured = false;
     down_movement_type = "None";
     down_movement_lines = 0;
     back_to_back = false;
-    prev_clear_action = "None";
 
     initial_move_side_done = false;
     last_move_down_time = Date.now();
@@ -179,9 +193,9 @@ function update() {
         }
         update_canvases();
     }
-    // if (!game_over) {
-    requestAnimationFrame(update);
-    // }
+    if (newgame) {
+        requestAnimationFrame(update);
+    }
 }
 
 function addKeyEventListeners() {
@@ -240,8 +254,9 @@ function addKeyEventListeners() {
             }
             if (e.key == Config.KEYBINDS['pause']) {
                 paused = !paused;
-            } else if (e == Config.KEYBINDS['restart']) {
-                // restart game
+            } else if (e.key == Config.KEYBINDS['restart']) {
+                newgame = false;
+                init();
             }
         }
 
@@ -437,6 +452,11 @@ function draw_text(ctx, text, font, size, color, x, y, align = "center", baselin
 
 }
 
+function draw_text_bg() {
+    gamectx.fillStyle = Config.FONT_BACKGROUND_COLOR;
+    gamectx.fillRect(0, (Config.VISIBLE_BOARD_HEIGHT / 2 - 1) * Config.BOX_SIZE, Config.VISIBLE_BOARD_HEIGHT * Config.BOX_SIZE, 3 * Config.BOX_SIZE);
+}
+
 function draw_score(score) {
     let str = score.toString();
     str = str.padStart(7, "0");
@@ -618,8 +638,12 @@ function get_next_piece() {
     if (curr_piece == null) {
         curr_piece = next_pieces.shift();
         if (!is_valid_position(board, curr_piece)) {
-            move_piece(board, curr_piece, 0, -1);
-            rotation_before_movement_occured = false;
+            if (!is_valid_position(board, curr_piece, 0, -1)) {
+                game_over = true;
+            } else {
+                move_piece(board, curr_piece, 0, -1);
+                rotation_before_movement_occured = false;
+            }
         }
         if (piece_bag.length == 0) {
             piece_bag = Object.keys(Pieces.PIECE_SHAPES);
@@ -783,7 +807,7 @@ function num_tspin_corners(board, piece) {
 
 }
 
-function update_score(linesCleared, piece, board, drop_type, lines_moved) {
+function update_score(linesCleared, piece, temp_board, board, drop_type, lines_moved) {
     let curr_clear_action = "None";
     if (drop_type == "Softdrop") {
         score += Config.ACTION_SCORE["Softdrop"];
@@ -793,7 +817,7 @@ function update_score(linesCleared, piece, board, drop_type, lines_moved) {
         return;
     } else {
         if (piece['shape'] == 'T' && rotation_before_movement_occured) {
-            let tspin_calc = num_tspin_corners(board, piece);
+            let tspin_calc = num_tspin_corners(temp_board, piece);
             let cornersFilled = tspin_calc[0];
             let cornersFacing = tspin_calc[1];
             if (cornersFacing == 2 || tst_or_fin_kick) {
@@ -866,7 +890,7 @@ function update_score(linesCleared, piece, board, drop_type, lines_moved) {
         if (currentCombo > maxCombo) {
             maxCombo = currentCombo;
         }
-        if(currentCombo > 0){
+        if (currentCombo > 0) {
             clearOutput += " Combo " + currentCombo;
         }
         tempScore += Config.ACTION_SCORE['Combo'] * currentCombo;
@@ -875,7 +899,6 @@ function update_score(linesCleared, piece, board, drop_type, lines_moved) {
     }
     tempScore *= level;
     score += tempScore;
-    prev_clear_action = curr_clear_action;
 
     if (difficult) {
         back_to_back = true;
@@ -883,7 +906,7 @@ function update_score(linesCleared, piece, board, drop_type, lines_moved) {
         back_to_back = false;
     }
 
-    if(clearOutput != "None"){
+    if (clearOutput != "None") {
         console.log(clearOutput);
     }
 }
@@ -905,7 +928,7 @@ function update_board() {
     // if rotation is done right before down movement, it could count for tspins.
     // need to know which rotation test tspin completed. if rotation test was right before piece placed, could count as tspin.
     if (down_movement_occured) {
-        update_score(0, null, board, down_movement_type, down_movement_lines);
+        update_score(0, null, board, board, down_movement_type, down_movement_lines);
         down_movement_occured = false;
         down_movement_type = "None";
         down_movement_lines = 0;
@@ -918,7 +941,7 @@ function update_board() {
             add_to_board(board, curr_piece);
             let temp_board = copy_board(board);
             let linesCleared = remove_complete_lines(board);
-            update_score(linesCleared, curr_piece, temp_board, "None", false);
+            update_score(linesCleared, curr_piece, temp_board, board, "None", false);
             totalLinesCleared += linesCleared;
             level = Math.floor(totalLinesCleared / 10) + 1;
             curr_piece = null;
@@ -940,26 +963,35 @@ function update_canvases() {
     erase_board();
     draw_board(board);
     draw_score(score);
-    if (curr_piece != null) {
-        draw_piece_shadow(board, curr_piece);
-        draw_piece(gamectx, curr_piece, curr_piece['x'], curr_piece['y']);
-    }
-    if (next_pieces != null) {
-        draw_next_pieces(next_pieces);
-    }
-    if (held_piece != null) {
-        draw_held_piece(held_piece);
-    }
-    if (draw_ready) {
-        draw_text(gamectx, "READY", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR_YELLOW,
-            Config.BOARD_WIDTH / 2 * Config.BOX_SIZE, Config.VISIBLE_BOARD_HEIGHT / 2 * Config.BOX_SIZE);
-    }
-    if (draw_go) {
-        draw_text(gamectx, "GO!", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR_YELLOW,
-            Config.BOARD_WIDTH / 2 * Config.BOX_SIZE, Config.VISIBLE_BOARD_HEIGHT / 2 * Config.BOX_SIZE);
-    }
-    if (paused) {
-        draw_text(gamectx, "PAUSED", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR_YELLOW,
-            Config.BOARD_WIDTH / 2 * Config.BOX_SIZE, Config.VISIBLE_BOARD_HEIGHT / 2 * Config.BOX_SIZE);
+    if (game_over) {
+        draw_text_bg();
+        draw_text(gamectx, "GAME OVER", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR_YELLOW,
+            Config.BOARD_WIDTH / 2 * Config.BOX_SIZE, (Config.VISIBLE_BOARD_HEIGHT / 2 + 0.5) * Config.BOX_SIZE);
+    } else {
+        if (curr_piece != null) {
+            draw_piece_shadow(board, curr_piece);
+            draw_piece(gamectx, curr_piece, curr_piece['x'], curr_piece['y']);
+        }
+        if (next_pieces != null) {
+            draw_next_pieces(next_pieces);
+        }
+        if (held_piece != null) {
+            draw_held_piece(held_piece);
+        }
+        if (draw_ready) {
+            draw_text_bg();
+            draw_text(gamectx, "READY", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR_YELLOW,
+                Config.BOARD_WIDTH / 2 * Config.BOX_SIZE, (Config.VISIBLE_BOARD_HEIGHT / 2 + 0.5) * Config.BOX_SIZE);
+        }
+        if (draw_go) {
+            draw_text_bg();
+            draw_text(gamectx, "GO!", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR_YELLOW,
+                Config.BOARD_WIDTH / 2 * Config.BOX_SIZE, (Config.VISIBLE_BOARD_HEIGHT / 2 + 0.5) * Config.BOX_SIZE);
+        }
+        if (paused) {
+            draw_text_bg();
+            draw_text(gamectx, "PAUSED", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR_YELLOW,
+                Config.BOARD_WIDTH / 2 * Config.BOX_SIZE, (Config.VISIBLE_BOARD_HEIGHT / 2 + 0.5) * Config.BOX_SIZE);
+        }
     }
 }
