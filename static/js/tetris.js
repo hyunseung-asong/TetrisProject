@@ -1,5 +1,5 @@
 import * as Pieces from './pieces.js';
-import * as Config from './config.js';
+import * as Config from './Config.js';
 
 const maindiv = document.getElementById("main");
 const bgdiv = document.getElementById("background");
@@ -429,6 +429,7 @@ function get_new_piece(piece_bag) {
     return new_piece;
 }
 
+// Added Board.js constructor
 function new_board() {
     let board = [];
     for (let yrow = 0; yrow < Config.BOARD_HEIGHT; yrow++) {
@@ -573,6 +574,7 @@ function draw_piece_shadow(board, piece) {
     draw_piece(gamectx, shadow, shadow['x'], shadow['y']);
 }
 
+
 function copy_board(board) {
     let b = [];
     for (let yrow = 0; yrow < Config.BOARD_HEIGHT; yrow++) {
@@ -585,6 +587,8 @@ function copy_board(board) {
     return b;
 }
 
+
+// ADDED Board.js
 function print_board(board) {
     let b = ""
     for (let yrow = 0; yrow < board.length; yrow++) {
@@ -911,6 +915,8 @@ function update_score(linesCleared, piece, temp_board, board, drop_type, lines_m
     }
 }
 
+
+// ADDDDDDDED
 function board_empty(board) {
     for (let yrow = Config.BOARD_HEIGHT - 1; yrow >= 0; yrow--) {
         for (let xcol = 0; xcol < Config.BOARD_WIDTH; xcol++) {
