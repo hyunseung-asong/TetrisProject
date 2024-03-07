@@ -1,9 +1,20 @@
-import TetrisGame from "./TetrisGame.js";
-import * as Constants from "./GameConstants.js";
-import * as Config from "./Config.js";
-import Board from "./Board.js";
-import Piece from "./Piece.js";
-import PieceQueue from "./PieceQueue.js";
+import Tetris from "./Tetris.js";
+const gameCanvas = document.getElementById("gameCanvas");
+const game1 = new Tetris(gameCanvas);
+game1.start();
+
+game1.stop();
+
+
+
+
+/*
+// import TetrisBaseGame from "./TetrisBaseGame.js";
+// import * as Constants from "./GameConstants.js";
+// import * as Config from "./Config.js";
+// import Board from "./Board.js";
+// import Piece from "./Piece.js";
+// import PieceQueue from "./PieceQueue.js";
 
 // let b = new Board();
 // let p = new Piece("T");
@@ -11,7 +22,7 @@ import PieceQueue from "./PieceQueue.js";
 // console.log(b.toStringWithPiece(p));
 // console.log(b.isValidPosition(p));
 
-let game1 = new TetrisGame();
+let game1 = new TetrisBaseGame();
 game1.start();
 
 
@@ -113,3 +124,5 @@ function addKeyEventListeners() {
 
     });
 }
+
+*/

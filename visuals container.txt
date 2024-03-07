@@ -1,0 +1,18 @@
+NEED TO SOLVE TSPIN calc?
+
+visuals need to know:
+
+game state:
+	board
+	currPiece
+	queue
+	heldPiece
+	gameOver
+visuals will handle inputs
+	handle ready/set/go
+	handle paused
+	handle config timings
+	
+
+JUST USE P for PAUSE AND R for RESTART
+fuck buttons
