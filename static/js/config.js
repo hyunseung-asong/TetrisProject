@@ -1,12 +1,5 @@
 export const
-    // base game
-    BOARD_WIDTH = 10,
     VISIBLE_BOARD_HEIGHT = 20,
-    BOARD_HEIGHT = 24,
-    BLANK = 0,
-    NUM_NEXT_PIECES = 5,
-
-    // controls
 
     KEYBINDS = {
         'move_left': "ArrowLeft",
@@ -21,7 +14,7 @@ export const
     },
 
     // game settings (time in ms)
-    FPS = 60,
+    FPS = 30,
     READY_SCREEN_TIMER = 1 * 1000,
     MOVE_SIDEWAYS_OFFSET = 0.15 * 1000,
     MOVE_SIDEWAYS_FREQ = 0.02 * 1000,

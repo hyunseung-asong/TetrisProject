@@ -1,25 +1,39 @@
-import * as Game from "./GameConstants";
-import Piece from "./Piece";
+import * as Constants from "./GameConstants.js";
+import Piece from "./Piece.js";
+
 
 export default class PieceQueue {
     constructor() {
-        this.refillQueue();
+        this.refillBag();
+        this.queue = [];
+        for (let i = 0; i < Constants.NUM_NEXT_PIECES; i++){
+            this.queue.push(this.bag.shift());
+        }
     }
 
-    get getNextPiece() {
-        const piece = this.queue.shift;
-        if (queue.length == 0) {
-            refillQueue();
+    // pops and returns next piece in queue.
+    grabNextPiece() {
+        const piece = this.queue.shift();
+        if (this.bag.length == 0) {
+            this.refillBag();
         }
+        this.queue.push(this.bag.shift());
         return piece;
     }
 
-    // shuffle and refill queue
-    refillQueue() {
-        this.queue = [];
-        const shapes = Object.keys(Game.PIECE_SHAPES);
-        for (let shape in shapes) {
-            this.queue.push(new Piece(shape));
+    get nextPieces(){
+        return this.queue;
+    }
+
+    // shuffle and refill bag
+    refillBag() {
+        this.bag = [];
+        const shapes = Object.keys(Constants.PIECE_SHAPES);
+        const len = shapes.length;
+        for (let i = 0; i < len; i++) {
+            const r = Math.floor(Math.random() * shapes.length);
+            this.bag.push(new Piece(shapes[r]));
+            shapes.splice(r, 1);
         }
     }
 }

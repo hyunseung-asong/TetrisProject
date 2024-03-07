@@ -1,22 +1,119 @@
-import * as Game from './GameConstants.js';
+import * as Constants from "./GameConstants.js";
 
+const BLANK = 0;
 
 export default class Board {
     constructor() {
         this.board = [];
-        for (let yrow = 0; yrow < Game.BOARD_HEIGHT; yrow++) {
-            let row = [];
-            for (let xcol = 0; xcol < Game.BOARD_WIDTH; xcol++) {
-                row.push(Game.BLANK);
+        for (let row = 0; row < Constants.BOARD_HEIGHT; row++) {
+            let r = [];
+            for (let col = 0; col < Constants.BOARD_WIDTH; col++) {
+                r.push(BLANK);
             }
-            this.board.push(row);
+            this.board.push(r);
         }
     }
 
-    get boardEmpty() {
-        for (let yrow = Game.BOARD_HEIGHT - 1; yrow >= 0; yrow--) {
-            for (let xcol = 0; xcol < Game.BOARD_WIDTH; xcol++) {
-                if (this.board[yrow][xcol] != Game.BLANK) {
+    tSpinInfo(piece, boardBeforeClear) {
+        if (piece.shape != 'T') {
+            return [0, 0];
+        }
+        let cornersFilled = 0;
+        let cornersFacing = 0;
+        let corners = [[0, 0], [2, 0], [0, 2], [2, 2]];
+
+        for (let i = 0; i < corners.length; i++) {
+            let cornerx = piece.x + corners[i][1];
+            let cornery = piece.y + corners[i][0];
+            if (-1 <= cornerx <= Constants.BOARD_WIDTH && -1 <= cornery <= Constants.BOARD_HEIGHT) {
+                if (cornerx == -1 || cornerx == Constants.BOARD_WIDTH ||
+                    cornery == -1 || cornery == Constants.BOARD_HEIGHT) {
+                    cornersFilled += 1;
+                } else if (boardBeforeClear[cornery][cornerx] != BLANK) {
+                    cornersFilled += 1;
+                }
+            }
+        }
+
+        let checkCorners = { 0: [0, 1], 1: [0, 3], 2: [2, 3], 3: [0, 2] };
+        if (piece.y + corners[checkCorners[piece.rotation][0]][1] < Constants.BOARD_HEIGHT &&
+            piece.x + corners[checkCorners[piece.rotation][0]][0] < Constants.BOARD_WIDTH) {
+            if (!boardBeforeClear.isBlank(piece.y + corners[checkCorners[piece.rotation][0]][1], piece.x + corners[checkCorners[piece.rotation][0]][0])) {
+                cornersFacing += 1;
+            }
+        }
+        if (piece.y + corners[checkCorners[piece.rotation][1]][1] < Constants.BOARD_HEIGHT &&
+            piece.x + corners[checkCorners[piece.rotation][1]][0] < Constants.BOARD_WIDTH) {
+            if (!boardBeforeClear.isBlank(piece.y + corners[checkCorners[piece.rotation][1]][1], piece.x + corners[checkCorners[piece.rotation][1]][0])) {
+                cornersFacing += 1;
+            }
+        }
+
+        return [cornersFilled, cornersFacing];
+    }
+
+    addPiece(piece) {
+        for(let i = 0; i < piece.positions.length; i++){
+            const y = piece.positions[i][0];
+            const x = piece.positions[i][1];
+            this.board[y][x] = piece.shape;
+        }
+    }
+
+    isValidPosition(piece, adjx=0, adjy=0) {
+        for (let i = 0; i < piece.positions.length; i++) {
+            let posy = piece.positions[i][0];
+            let posx = piece.positions[i][1];
+            if (!this.withinBoard(posy + adjy, posx + adjx) ||
+                !this.isBlank(posy + adjy, posx + adjx)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    removeCompleteLines() {
+        let numRemovedLines = 0;
+        let row = Constants.BOARD_HEIGHT - 1;
+        while (row >= 0) {
+            if (this.isCompleteLine(row)) {
+                for (let pullDownRow = row; pullDownRow > 0; pullDownRow--) {
+                    for (let col = 0; col < Constants.BOARD_WIDTH; col++) {
+                        this.board[pullDownRow][col] = this.board[pullDownRow - 1][col];
+                    }
+                }
+                for (let col = 0; col < Constants.BOARD_WIDTH; col++) {
+                    this.board[0][col] = BLANK;
+                }
+                numRemovedLines += 1;
+            } else {
+                row -= 1;
+            }
+        }
+        return numRemovedLines;
+    }
+
+    isCompleteLine(row) {
+        for (let col = 0; col < Constants.BOARD_WIDTH; col++) {
+            if (this.board[row][col] == BLANK) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    isBlank(row, col) {
+        return this.board[row][col] == BLANK;
+    }
+
+    withinBoard(row, col) {
+        return (0 <= col && col < Constants.BOARD_WIDTH && 0 <= row && row < Constants.BOARD_HEIGHT);
+    }
+
+    get empty() {
+        for (let row = Constants.BOARD_HEIGHT - 1; row >= 0; row--) {
+            for (let col = 0; col < Constants.BOARD_WIDTH; col++) {
+                if (this.board[row][col] != BLANK) {
                     return false;
                 }
             }
@@ -24,19 +121,45 @@ export default class Board {
         return true;
     }
 
-    printBoard() {
-        let b = ""
-        for (let yrow = 0; yrow < this.board.length; yrow++) {
-            let row = "";
-            for (let xcol = 0; xcol < board[0].length; xcol++) {
-                if (this.board[yrow][xcol] == Game.BLANK) {
-                    row += '.';
+    toStringWithPiece(piece) {
+        if (piece == null) {
+            return this.toString();
+        }
+        let str = "";
+        for (let row = 0; row < this.board.length; row++) {
+            for (let col = 0; col < this.board[0].length; col++) {
+                let inxys = false;
+                piece.positions.forEach((position) => {
+                    if (position[0] == row && position[1] == col) {
+                        inxys = true;
+                    }
+                });
+                if (inxys) {
+                    str += piece.shape;
+                } else if (this.isBlank(row, col)) {
+                    str += '.';
                 } else {
-                    row += this.board[yrow][xcol];
+                    str += this.board[row][col];
                 }
             }
-            b += row + "\n";
+            str += "\n";
         }
-        console.log(b);
+        return str;
     }
+
+    toString() {
+        let str = "";
+        for (let row = 0; row < this.board.length; row++) {
+            for (let col = 0; col < this.board[0].length; col++) {
+                if (this.isBlank(row, col)) {
+                    str += '.';
+                } else {
+                    str += this.board[row][col];
+                }
+            }
+            str += "\n";
+        }
+        return str;
+    }
+
 }

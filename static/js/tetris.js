@@ -1,4 +1,4 @@
-import * as Pieces from './pieces.js';
+import * as Pieces from './GameConstants.js';
 import * as Config from './Config.js';
 
 const maindiv = document.getElementById("main");
@@ -263,6 +263,7 @@ function addKeyEventListeners() {
     });
 }
 
+// ADDED Piece.js move(), checkAndMove()
 // returns true if mved successfully, false otherwise
 function move_piece(board, piece, adjx, adjy) {
     if (is_valid_position(board, piece, adjx, adjy)) {
@@ -274,7 +275,7 @@ function move_piece(board, piece, adjx, adjy) {
     return false;
 }
 
-
+// ADDED Piece.js rotate() EXCEPT TST_FIN_KICK AND ROTATION BEFORE MOVEMENT
 // rotates piece based on current position and roation while allowing for wall kicks
 function rotate_piece(board, piece, adj_rot) {
     let len_rots = Pieces.PIECE_SHAPES[piece['shape']].length;
@@ -340,6 +341,7 @@ function rotate_piece(board, piece, adj_rot) {
     }
 }
 
+// ADDED Board.js isValidPosition()
 // returns true if the given position with adjx and y is within the board
 function is_valid_position(board, piece, adjx = 0, adjy = 0) {
     let template = Pieces.PIECE_SHAPES[piece['shape']][piece['rotation']];
@@ -363,6 +365,7 @@ function is_valid_position(board, piece, adjx = 0, adjy = 0) {
 }
 
 
+// ADDED Board.js removeCompleteLines(), get removedLines
 // removes any complete lines and pushes down the rest of the board;
 // returns the number of removed lines;
 function remove_complete_lines(board) {
@@ -387,7 +390,7 @@ function remove_complete_lines(board) {
     return num_removed_lines;
 }
 
-
+// ADDED Board.js isCompleteLine()
 // returns true if given row is full
 function is_complete_line(board, yrow) {
     for (let xcol = 0; xcol < Config.BOARD_WIDTH; xcol++) {
@@ -398,11 +401,13 @@ function is_complete_line(board, yrow) {
     return true;
 }
 
+// ADDED Board.js withinBoard()
 // returns true if given x y is within board
 function is_on_board(yrow, xcol) {
     return (0 <= xcol && xcol < Config.BOARD_WIDTH && yrow < Config.BOARD_HEIGHT);
 }
 
+// ADDED Board.js addPiece()
 // solidifies a piece onto the current board state
 function add_to_board(board, piece) {
     let template = Pieces.PIECE_SHAPES[piece['shape']][piece['rotation']];
@@ -415,7 +420,7 @@ function add_to_board(board, piece) {
     }
 }
 
-
+// ADDED PieceQueue.js refillQueue()
 // returns a new piece from the current bag of pieces
 function get_new_piece(piece_bag) {
     let index = Math.floor(Math.random() * piece_bag.length);
@@ -442,8 +447,6 @@ function new_board() {
     return board;
 }
 
-
-// draw text
 function draw_text(ctx, text, font, size, color, x, y, align = "center", baseline = "middle") {
     ctx.font = size + "px" + " " + font;
     ctx.textAlign = align;
@@ -468,8 +471,6 @@ function draw_score(score) {
     draw_text(scoreTextctx, str, Config.TEXT_FONT, Config.FONT_SIZE_SMALL, Config.FONT_COLOR_YELLOW, scoreTextCanvas.width, scoreTextCanvas.height, "right", "bottom");
 }
 
-
-// draw background
 function draw_bg() {
     bgctx.lineWidth = 1;
     // Draw gridlines
@@ -494,8 +495,6 @@ function draw_bg() {
 
 }
 
-
-// draw box
 function draw_box(ctx, yrow, xcol, color) {
     ctx.fillStyle = color;
     ctx.fillRect(Math.floor(xcol * Config.BOX_SIZE + 1), Math.floor(yrow * Config.BOX_SIZE + 1), Config.BOX_SIZE - 1, Config.BOX_SIZE - 1);
@@ -507,8 +506,6 @@ function erase_board() {
     holdctx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
 }
 
-// draw board
-
 function draw_board(board) {
     for (let yrow = Config.BOARD_HEIGHT - Config.VISIBLE_BOARD_HEIGHT; yrow < Config.BOARD_HEIGHT; yrow++) {
         for (let xcol = 0; xcol < Config.BOARD_WIDTH; xcol++) {
@@ -519,7 +516,6 @@ function draw_board(board) {
     }
 }
 
-// draw next pieces
 function draw_next_pieces(next_pieces) {
     for (let i = 0; i < next_pieces.length; i++) {
         let x = 0.5;
@@ -534,7 +530,7 @@ function draw_next_pieces(next_pieces) {
     }
 
 }
-// draw held pieces
+
 function draw_held_piece(piece) {
     let x = 0.5;
     let y = 0.5 + Config.BOARD_HEIGHT - Config.VISIBLE_BOARD_HEIGHT;
@@ -546,7 +542,7 @@ function draw_held_piece(piece) {
     }
     draw_piece(holdctx, piece, x, y);
 }
-// draw piece
+
 function draw_piece(ctx, piece, x, y) {
     const template = Pieces.PIECE_SHAPES[piece['shape']][piece['rotation']];
     for (let yrow = 0; yrow < template.length; yrow++) {
@@ -559,7 +555,7 @@ function draw_piece(ctx, piece, x, y) {
         }
     }
 }
-// draw piece shadow
+
 function draw_piece_shadow(board, piece) {
     let i;
     for (i = 1; i < Config.BOARD_HEIGHT; i++) {
@@ -574,7 +570,7 @@ function draw_piece_shadow(board, piece) {
     draw_piece(gamectx, shadow, shadow['x'], shadow['y']);
 }
 
-
+// use structuredClone(Board b)
 function copy_board(board) {
     let b = [];
     for (let yrow = 0; yrow < Config.BOARD_HEIGHT; yrow++) {
@@ -588,7 +584,7 @@ function copy_board(board) {
 }
 
 
-// ADDED Board.js
+// ADDED Board.js toString()
 function print_board(board) {
     let b = ""
     for (let yrow = 0; yrow < board.length; yrow++) {
@@ -605,6 +601,7 @@ function print_board(board) {
     console.log(b);
 }
 
+// ADDED Board.js toStringWithPiece()
 function print_board_with_piece(board, piece) {
     let template = Pieces.PIECE_SHAPES[piece['shape']][piece['rotation']];
     let xys = [];
@@ -638,6 +635,7 @@ function print_board_with_piece(board, piece) {
     console.log(b);
 }
 
+// ADDED PieceQueue.js nextPiece
 function get_next_piece() {
     if (curr_piece == null) {
         curr_piece = next_pieces.shift();
@@ -916,7 +914,7 @@ function update_score(linesCleared, piece, temp_board, board, drop_type, lines_m
 }
 
 
-// ADDDDDDDED
+// Added Board.js empty
 function board_empty(board) {
     for (let yrow = Config.BOARD_HEIGHT - 1; yrow >= 0; yrow--) {
         for (let xcol = 0; xcol < Config.BOARD_WIDTH; xcol++) {
