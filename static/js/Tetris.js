@@ -1,10 +1,13 @@
-import TetrisBaseGame from "./TetrisBaseGame";
-import Renderer from "./Renderer";
+import TetrisBaseGame from "./TetrisBaseGame.js";
+import Renderer from "./Renderer.js";
 import * as Config from "./Config.js";
 
 export default class Tetris {
     constructor(canvas) {
+        this.canvas = canvas;
         this.init();
+        this.addMouseEventListeners();
+        this.addKeyEventListeners();
     }
 
     init() {
@@ -12,8 +15,7 @@ export default class Tetris {
         this.game = new TetrisBaseGame();
         this.gameState = this.game.getGameState();
         this.gameStats = this.game.getGameStats();
-        this.renderer = new Renderer(canvas);
-        this.canvas = canvas;
+        this.renderer = new Renderer(this.canvas);
 
         this.now = Date.now();
         this.then = Date.now();
@@ -36,13 +38,15 @@ export default class Tetris {
         this.restarted = false;
         this.readyScreenTime = Date.now();
         this.readyScreen = true;
+        this.readyScreenDrawn = false;
         this.goScreen = false;
+        this.goScreenDrawn = false;
         this.paused = false;
+        this.pausedDrawn = false;
     }
 
     start() {
-        this.addMouseEventListeners();
-        this.addKeyEventListeners();
+        this.renderer.drawGame(this.gameState, this.gameStats);
         requestAnimationFrame(() => this.update());
     }
 
@@ -53,20 +57,33 @@ export default class Tetris {
 
             if (this.readyScreen || this.goScreen) {
                 this.countDownReadyGo();
-                if(this.readyScreen){
-                    //draw ready
-                }else if(this.goScreen){
-                    //draw go
+                if (this.readyScreen && !this.readyScreenDrawn) {
+                    this.renderer.drawReady();
+                    this.readyScreenDrawn = true;
+                } else if (this.goScreen && !this.goScreenDrawn) {
+                    this.renderer.drawGo();
+                    this.goScreenDrawn = true;
                 }
             } else if (this.paused) {
-                // draw paused
+                if (!this.pausedDrawn) {
+                    this.renderer.drawPaused();
+                    this.pausedDrawn = true;
+                }
             } else {
-                // draw gameLoop
-                if (this.delta > this.interval) {
-                    this.then = this.now - (this.delta % this.interval);
-                    this.handleHoldingKeys();
-                    this.game.update();
-                    // updatecanvas
+                if (!this.gameState['gameOver']) {
+                    if (this.delta > this.interval) {
+                        this.then = this.now - (this.delta % this.interval);
+
+
+                        this.handleGameTimer();
+                        this.game.update();
+                        this.gameState = this.game.getGameState();
+                        this.gameStats = this.game.getGameStats();
+                        this.renderer.drawGame(this.gameState, this.gameStats);
+                        // console.log("drawing game");
+                    }
+                } else {
+                    console.log("GG");
                 }
             }
 
@@ -78,19 +95,20 @@ export default class Tetris {
         this.running = false;
     }
 
-    countDownReadyGo(){
-        if(this.now - this.readyScreenTime < Config.READY_SCREEN_TIMER){
-            readyScreen = true;
-        }else if (this.now - this.readyScreenTime < 2 * Config.READY_SCREEN_TIMER){
+    countDownReadyGo() {
+        if (this.now - this.readyScreenTime < Config.READY_SCREEN_TIMER) {
+            this.readyScreen = true;
+        } else if (this.now - this.readyScreenTime < 2 * Config.READY_SCREEN_TIMER) {
             this.readyScreen = false;
             this.goScreen = true;
-        }else{
+        } else {
             this.readyScreen = false;
             this.goScreen = false;
+            this.lastFallTime = this.now;
         }
     }
 
-    handleHoldingKeys() {
+    handleGameTimer() {
         if (this.holdingMoveLeft || this.holdingMoveRight) {
             if (!this.initialMoveSideDone) {
                 if (this.holdingMoveLeft) {
@@ -114,28 +132,32 @@ export default class Tetris {
                 }
             }
         }
-        if(this.holdingSoftdrop){
-            if(this.now - this.lastMoveDownTime > Config.MOVE_DOWN_FREQ){
+        if (this.holdingSoftdrop) {
+            if (this.now - this.lastMoveDownTime > Config.MOVE_DOWN_FREQ) {
                 this.game.setInput("Softdrop");
                 this.lastMoveDownTime = this.now;
                 this.lastFallTime = this.now;
             }
         }
-        if(this.pressedHarddrop){
+        if (this.pressedHarddrop) {
             this.game.setInput("Harddrop");
             this.pressedHarddrop = false;
         }
-        if(this.pressedRotateCCW){
+        if (this.pressedRotateCCW) {
             this.game.setInput("RotateCCW");
             this.pressedRotateCCW = false;
         }
-        if(this.pressedRotateCW){
+        if (this.pressedRotateCW) {
             this.game.setInput("RotateCW");
             this.pressedRotateCW = false;
         }
-        // natural fall
-        if(this.now - this.lastFallTime > Config.FALL_FREQ){
+        if (this.pressedHold) {
+            this.game.setInput("Hold");
+            this.pressedHold = false;
+        }
+        if (this.now - this.lastFallTime > Config.FALL_FREQ) {
             this.game.natualFall();
+            this.lastMoveDownTime = this.now;
             this.lastFallTime = this.now;
         }
     }
@@ -204,6 +226,7 @@ export default class Tetris {
                     }
                     if (e.key == Config.KEYBINDS['Pause']) {
                         this.paused = !this.paused;
+                        this.pausedDrawn = false;
                     } else if (e.key == Config.KEYBINDS['Restart']) {
                         this.init();
                         this.start();

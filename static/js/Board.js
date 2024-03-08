@@ -14,7 +14,7 @@ export default class Board {
         }
     }
 
-    tSpinInfo(piece, boardBeforeClear) {
+    tSpinInfo(piece) {
         if (piece.shape != 'T') {
             return [0, 0];
         }
@@ -29,7 +29,7 @@ export default class Board {
                 if (cornerx == -1 || cornerx == Constants.BOARD_WIDTH ||
                     cornery == -1 || cornery == Constants.BOARD_HEIGHT) {
                     cornersFilled += 1;
-                } else if (boardBeforeClear[cornery][cornerx] != BLANK) {
+                } else if (this.board[cornery][cornerx] != BLANK) {
                     cornersFilled += 1;
                 }
             }
@@ -38,13 +38,13 @@ export default class Board {
         let checkCorners = { 0: [0, 1], 1: [0, 3], 2: [2, 3], 3: [0, 2] };
         if (piece.y + corners[checkCorners[piece.rotation][0]][1] < Constants.BOARD_HEIGHT &&
             piece.x + corners[checkCorners[piece.rotation][0]][0] < Constants.BOARD_WIDTH) {
-            if (!boardBeforeClear.isBlank(piece.y + corners[checkCorners[piece.rotation][0]][1], piece.x + corners[checkCorners[piece.rotation][0]][0])) {
+            if (!this.isBlank(piece.y + corners[checkCorners[piece.rotation][0]][1], piece.x + corners[checkCorners[piece.rotation][0]][0])) {
                 cornersFacing += 1;
             }
         }
         if (piece.y + corners[checkCorners[piece.rotation][1]][1] < Constants.BOARD_HEIGHT &&
             piece.x + corners[checkCorners[piece.rotation][1]][0] < Constants.BOARD_WIDTH) {
-            if (!boardBeforeClear.isBlank(piece.y + corners[checkCorners[piece.rotation][1]][1], piece.x + corners[checkCorners[piece.rotation][1]][0])) {
+            if (!this.isBlank(piece.y + corners[checkCorners[piece.rotation][1]][1], piece.x + corners[checkCorners[piece.rotation][1]][0])) {
                 cornersFacing += 1;
             }
         }
@@ -119,6 +119,18 @@ export default class Board {
             }
         }
         return true;
+    }
+
+    getDeepCopy(){
+        let board = [];
+        for(let row = 0; row < Constants.BOARD_HEIGHT; row++){
+            let r = [];
+            for(let col = 0 ; col < Constants.BOARD_WIDTH; col++){
+                r.push(this.board[row][col]);
+            }
+            board.push(r);
+        }
+        return board;
     }
 
     toStringWithPiece(piece) {

@@ -2,7 +2,6 @@
 export const
     BOARD_WIDTH = 10,
     BOARD_HEIGHT = 24,
-    VISIBLE_BOARD_HEIGHT = 20,
     NUM_NEXT_PIECES = 5,
     I_PIECE = [
         [[0, 0, 0, 0],

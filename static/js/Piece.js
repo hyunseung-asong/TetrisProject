@@ -64,12 +64,10 @@ export default class Piece {
             this.updatePositions();
             let testx = Constants.WALLKICK_JLSTZ[wallkickTest][i][0];
             let testy = -Constants.WALLKICK_JLSTZ[wallkickTest][i][1];
-            console.log(testx + ", " + testy);
             if (this.piece == 'I') {
                 testx = Constants.WALLKICK_I[wallkickTest][i][0];
                 testy = -Constants.WALLKICK_I[wallkickTest][i][1];
             }
-            console.log(this);
             if (board.isValidPosition(this, testx, testy)) {
                 this.move(testx, testy);
                 this.updatePositions();

@@ -18,90 +18,16 @@
     margin: auto;
 }
 
-
-.vertical-container {
-    float: left;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
-.horizontal-container {
+.game-container {
     float: left;
     position: relative;
     display: flex;
     flex-direction: row;
-}
-
-.stage {
-    float: left;
-    position: relative;
-    border-style: solid;
-    border-width: 2px;
-    border-color: #414141;
-    margin: 5px;
-    /* margin-top: 0px; */
-    background-color: #000000;
-}
-
-#upper-stage {
-    margin: 0;
-    border: 0;
-
-}
-
-.textCanvas {
-    float: left;
-    position: relative;
-    margin: 7px;
-    margin-bottom: 0px;
-    margin-top: 0px;
-}
-
-
-#lstage {
-    width: 101px;
-    height: 76px;
-}
-
-#stage {
-    width: 251px;
-    height: 501px;
-}
-
-#rstage {
-    width: 101px;
-    height: 376px;
-}
-
-#bottom-stage {
-    width: fit-content;
-    height: fit-content;
-    display: flex;
-    flex-direction: column;
     justify-content: center;
-    align-items: center;
-    border-style: none;
+    /* align-items: center; */
 }
 
-/* #gameStats {
-    width: 251px;
-    height: 150px;
-} */
-
-#gameScore {
-    position: absolute;
-
-}
-
-#bgCanvas {
-    position: absolute;
-    z-index: 1;
-}
-
-#gameCanvas {
-    position: absolute;
-    z-index: 2;
+.game-canvas{
+    position: relative;
+    margin: 5px;
 }

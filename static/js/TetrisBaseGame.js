@@ -44,7 +44,7 @@ export default class TetrisBaseGame {
             'board': this.board,
             'currPiece': this.currPiece,
             'heldPiece': this.heldPiece,
-            'queue': this.queue,
+            'queue': this.queue.queue,
             'gameOver': this.gameOver
         };
     }
@@ -63,14 +63,12 @@ export default class TetrisBaseGame {
         if (!this.gameOver) {
             this.handleInputs();
             this.updateBoard();
-
         }
-        console.log(this.board.toStringWithPiece(this.currPiece));
     }
 
     updateBoard() {
         if (this.downMovementOccurred) {
-            updateScore(0, this.board);
+            this.updateScore(0, this.board);
             this.downMovementOccurred = false;
             this.downMovementType = "None";
             this.downMovementLines = 0;
@@ -78,15 +76,23 @@ export default class TetrisBaseGame {
         if (this.piecePlaced) {
             if (!this.board.isValidPosition(this.currPiece)) {
                 this.gameOver = true;
-                console.log("GG");
             } else {
                 this.board.addPiece(this.currPiece);
-                let boardBeforeClear = structuredClone(this.board);
+                let boardBeforeClear = new Board();
+                boardBeforeClear.board = this.board.getDeepCopy();
                 let linesCleared = this.board.removeCompleteLines();
                 this.updateScore(linesCleared, boardBeforeClear);
                 this.totalLinesCleared += linesCleared;
                 this.level = Math.floor(this.totalLinesCleared / 10) + 1;
-                this.currPiece = this.queue.grabNextPiece();
+
+                let tempNextPiece = this.queue.grabNextPiece();
+                if (!this.board.isValidPosition(tempNextPiece)) {
+                    tempNextPiece.move(0, -1);
+                    if (!this.board.isValidPosition(tempNextPiece)) {
+                        this.gameOver = true;
+                    }
+                }
+                this.currPiece = tempNextPiece;
                 this.piecePlaced = false;
                 this.holdAvailable = true;
             }
@@ -96,13 +102,15 @@ export default class TetrisBaseGame {
     updateScore(linesCleared, boardBeforeClear) {
         let currClearAction = "None";
         if (this.downMovementType == "Softdrop") {
+            currClearAction = "Softdrop";
             this.score += Constants.ACTION_SCORE["Softdrop"];
             return;
         } else if (this.downMovementType == "Harddrop") {
+            currClearAction = "Harddrop";
             this.score += Constants.ACTION_SCORE["Harddrop"] * this.downMovementLines;
         } else {
-            if (this.currPiece == "T" && this.rotationBeforeMovementOccurred) {
-                const tSpinCalc = board.tSpinInfo(this.currPiece, boardBeforeClear);
+            if (this.currPiece.shape == "T" && this.rotationBeforeMovementOccurred) {
+                const tSpinCalc = boardBeforeClear.tSpinInfo(this.currPiece, boardBeforeClear);
                 const cornersFilled = tSpinCalc[0];
                 const cornersFacing = tSpinCalc[1];
                 if (cornersFacing == 2 || this.currPiece.tstOrFinKicked) {
@@ -169,18 +177,20 @@ export default class TetrisBaseGame {
                 tempScore *= 1.5;
             }
         }
-        clearOutput += currClearAction;
-        if (linesCleared != 0) {
-            this.currentCombo += 1;
-            if (this.currentCombo > this.maxCombo) {
-                this.maxCombo = this.currentCombo;
+        if (!(currClearAction == "Softdrop" || currClearAction == "Harddrop")) {
+            clearOutput += currClearAction;
+            if (linesCleared != 0) {
+                this.currentCombo += 1;
+                if (this.currentCombo > this.maxCombo) {
+                    this.maxCombo = this.currentCombo;
+                }
+                if (this.currentCombo > 0) {
+                    clearOutput += " Combo " + this.currentCombo;
+                }
+                tempScore += Constants.ACTION_SCORE['Combo'] * this.currentCombo;
+            } else {
+                this.currentCombo = -1;
             }
-            if (this.currentCombo > 0) {
-                clearOutput += " Combo " + this.currentCombo;
-            }
-            tempScore += Constants.ACTION_SCORE['Combo'] * this.currentCombo;
-        } else {
-            this.currentCombo = -1;
         }
         tempScore *= this.level;
         this.score += tempScore;
@@ -191,88 +201,118 @@ export default class TetrisBaseGame {
             this.backToBack = false;
         }
 
-        if (clearOutput != "None") {
+        if (clearOutput != "None" && clearOutput != "") {
             console.log(clearOutput);
         }
     }
 
-    natualFall(){
-        if(this.board.isValidPosition(this.currPiece, 0, 1)){
-            this.move(this.currPiece, 0, 1);
+
+    natualFall() {
+        if (this.board.isValidPosition(this.currPiece, 0, 1)) {
+            this.currPiece.move(0, 1);
             this.rotationBeforeMovementOccurred = false;
-        }else{
+            this.downMovementType = "Natural";
+            this.downMovementLines = 1;
+        } else {
             this.piecePlaced = true;
         }
     }
 
-    // when pressed => input = true, handle all inputs, then set to false
+
     setInput(input) {
         this.inputs[input] = true;
     }
 
     handleInputs() {
         Object.keys(this.inputs).forEach((input) => {
+
             switch (input) {
                 case "MoveLeft":
-                    if (this.board.isValidPosition(this.currPiece, -1, 0)) {
-                        this.currPiece.move(-1, 0);
-                        this.rotationBeforeMovementOccurred = true;
+                    if (this.inputs[input]) {
+                        if (this.board.isValidPosition(this.currPiece, -1, 0)) {
+                            this.currPiece.move(-1, 0);
+                            this.rotationBeforeMovementOccurred = false;
+                        }
                     }
                     break;
                 case "MoveRight":
-                    if (this.board.isValidPosition(this.currPiece, 1, 0)) {
-                        this.currPiece.move(1, 0);
-                        this.rotationBeforeMovementOccurred = true;
+                    if (this.inputs[input]) {
+                        if (this.board.isValidPosition(this.currPiece, 1, 0)) {
+                            this.currPiece.move(1, 0);
+                            this.rotationBeforeMovementOccurred = false;
+                        }
                     }
-
                     break;
                 case "Softdrop":
-                    if (this.board.isValidPosition(this.currPiece, 0, 1)) {
-                        this.currPiece.move(0, 1);
-                        this.rotationBeforeMovementOccurred = false;
-                        this.downMovementOccurred = true;
-                        this.downMovementType = "Softdrop";
-                        this.downMovementLines = 1;
+                    if (this.inputs[input]) {
+                        if (this.board.isValidPosition(this.currPiece, 0, 1)) {
+                            this.currPiece.move(0, 1);
+                            this.rotationBeforeMovementOccurred = false;
+                            this.downMovementOccurred = true;
+                            this.downMovementType = "Softdrop";
+                            this.downMovementLines = 1;
+                        }
                     }
-
                     break;
                 case "Harddrop":
-                    let i = 1;
-                    for (i = 1; i < Constants.BOARD_HEIGHT; i++) {
-                        if (!this.board.isValidPosition(this.currPiece, 0, i)) {
-                            break;
+                    if (this.inputs[input]) {
+                        let i = 1;
+                        for (i = 1; i < Constants.BOARD_HEIGHT; i++) {
+                            if (!this.board.isValidPosition(this.currPiece, 0, i)) {
+                                break;
+                            }
+                        }
+                        this.currPiece.move(0, i - 1);
+                        this.piecePlaced = true;
+                        if (i - 1 > 0) {
+                            this.rotationBeforeMovementOccurred = false;
+                            this.downMovementOccurred = true;
+                            this.downMovementType = "Harddrop";
+                            this.downMovementLines = i - 1;
                         }
                     }
-                    this.currPiece.move(0, i - 1);
-                    this.piecePlaced = true;
-                    this.rotationBeforeMovementOccurred = false;
-                    this.downMovementOccurred = true;
-                    this.downMovementType = "Harddrop";
-                    this.downMovementLines = i - 1;
                     break;
                 case "RotateCCW": // Rotate Left
-                    this.currPiece.rotate(this.board, -1);
-
-                    break;
-                case "RotateCW": // Rotate Right
-                    this.currPiece.rotate(this.board, 1);
-
-                    break;
-                case "Hold":
-                    if (this.holdAvailable) {
-                        let temp = this.heldPiece;
-                        this.heldPiece = new Piece(this.currPiece.shape);
-                        if (temp == null) {
-                            this.currPiece = this.queue.grabNextPiece();
-                        } else {
-                            this.currPiece = temp;
-                        }
-                        this.holdAvailable = false;
-
+                    if (this.inputs[input]) {
+                        this.currPiece.rotate(this.board, -1);
+                        this.rotationBeforeMovementOccurred = true;
+                        // SHOULD ONLY BE WHEN SUCCESSFUL
                     }
                     break;
-                case "Restart":
-                    this.restartGame();
+                case "RotateCW": // Rotate Right
+                    if (this.inputs[input]) {
+                        this.currPiece.rotate(this.board, 1);
+                        this.rotationBeforeMovementOccurred = true;
+                        // SHOULD ONLY BE WHEN SUCCESSFUL
+                    }
+                    break;
+                case "Hold":
+                    if (this.inputs[input]) {
+                        if (this.holdAvailable) {
+                            let temp = this.heldPiece;
+                            this.heldPiece = new Piece(this.currPiece.shape);
+                            if (temp == null) {
+                                let tempNextPiece = this.queue.grabNextPiece();
+                                if (!this.board.isValidPosition(tempNextPiece)) {
+                                    tempNextPiece.move(0, -1);
+                                    if (!this.board.isValidPosition(tempNextPiece)) {
+                                        this.gameOver = true;
+                                    }
+                                }
+                                this.currPiece = tempNextPiece;
+                            } else {
+                                if (!this.board.isValidPosition(temp)) {
+                                    temp.move(0, -1);
+                                    if (!this.board.isValidPosition(temp)) {
+                                        this.gameOver = true;
+                                    }
+                                }
+                                this.currPiece = temp;
+                            }
+                            this.holdAvailable = false;
+
+                        }
+                    }
                     break;
                 default:
                     break;
@@ -282,9 +322,5 @@ export default class TetrisBaseGame {
         Object.keys(this.inputs).forEach((input) => {
             this.inputs[input] = false;
         });
-    }
-
-    restartGame(){
-        this = new TetrisBaseGame();
     }
 }

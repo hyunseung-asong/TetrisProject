@@ -1,6 +1,5 @@
 export const
-    VISIBLE_BOARD_HEIGHT = 20,
-
+    // game settings (time in ms)
     KEYBINDS = {
         'MoveLeft': "ArrowLeft",
         'MoveRight': "ArrowRight",
@@ -12,21 +11,15 @@ export const
         'Pause': "p",
         'Restart': "r"
     },
-
-    // game settings (time in ms)
-    FPS = 30,
     READY_SCREEN_TIMER = 1 * 1000,
     MOVE_SIDEWAYS_OFFSET = 0.15 * 1000,
     MOVE_SIDEWAYS_FREQ = 0.02 * 1000,
     MOVE_DOWN_FREQ = 0.04 * 1000,
     FALL_FREQ = 1.5 * 1000,
 
-
-    
-
-
-
     // appearance settings
+    FPS = 30,
+    VISIBLE_BOARD_HEIGHT = 20,
     PIECE_COLORS = {
         'I': 'rgba(0, 255, 255, 1)',
         'T': 'rgba(128, 0, 128, 1)',
@@ -46,17 +39,17 @@ export const
         'O': 'rgba(255, 255, 0, 0.45)'
     },
 
-    GRID_HIGHLIGHT = 'rgba(30, 30, 30, 1)',
-    GRID_SHADOW = 'rgba(18, 18, 18, 1)',
-    BOX_SIZE = 25,
+    
 
     // font settings
     FONT_SIZE = 36,
     TEXT_FONT = "Montserrat-Medium",
     TEXT_FONT_LOCATION = "static/fonts/Montserrat-Medium.ttf",
     FONT_SIZE_LARGE = 36,
+    FONT_SIZE_MEDIUM = 30,
     FONT_SIZE_SMALL = 24,
     FONT_SIZE_SMALLEST = 12,
-    FONT_COLOR_YELLOW = 'rgba(238, 238, 00, 1)',
-    FONT_BACKGROUND_COLOR = 'rgba(155, 155, 155, 0.8)'
+    FONT_COLOR_YELLOW = 'rgba(238, 238, 0, 1)',
+    FONT_COLOR_WHITE = 'rgba(255, 255, 255, 1)',
+    FONT_BACKGROUND_COLOR = 'rgba(155, 155, 155, 1)'
     ;
