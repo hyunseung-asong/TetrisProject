@@ -80,10 +80,10 @@ export default class Tetris {
                         this.gameState = this.game.getGameState();
                         this.gameStats = this.game.getGameStats();
                         this.renderer.drawGame(this.gameState, this.gameStats);
-                        // console.log("drawing game");
                     }
                 } else {
-                    console.log("GG");
+                    this.renderer.drawGameOver();
+                    this.stop();
                 }
             }
 
@@ -142,6 +142,8 @@ export default class Tetris {
         if (this.pressedHarddrop) {
             this.game.setInput("Harddrop");
             this.pressedHarddrop = false;
+            this.lastMoveDownTime = this.now;
+            this.lastFallTime = this.now;
         }
         if (this.pressedRotateCCW) {
             this.game.setInput("RotateCCW");
@@ -166,7 +168,6 @@ export default class Tetris {
         this.canvas.focus();
         this.canvas.addEventListener("click", () => {
             this.canvas.focus();
-            console.log("clicked");
         });
     }
 

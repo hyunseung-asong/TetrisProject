@@ -1,7 +1,4 @@
-when near top, pieces are placing down really fast
-double check game end conditions
-font loading.......
-
+double check game end conditions?
 
 
 have separate play style for ai and player

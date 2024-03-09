@@ -37,6 +37,11 @@ const
     CANVAS_WIDTH = 6 * BORDER_SIZE + 2 * MARGIN_SIZE + CANVAS_BOARD_WIDTH + CANVAS_HOLD_WIDTH + CANVAS_QUEUE_WIDTH,
     CANVAS_HEIGHT = 2 * BORDER_SIZE + CANVAS_BOARD_HEIGHT + TEXT_HEIGHT + MARGIN_SIZE,
 
+    CANVAS_CLEARTEXT_XOFFSET = CANVAS_QUEUE_XOFFSET,
+    CANVAS_CLEARTEXT_YOFFSET = TEXT_HEIGHT + 2 * MARGIN_SIZE + 2 * BORDER_SIZE + CANVAS_QUEUE_HEIGHT,
+    CANVAS_CLEARTEXT_WIDTH = CANVAS_QUEUE_WIDTH,
+    CANVAS_CLEARTEXT_HEIGHT = Config.FONT_SIZE_SMALLEST,
+
     CANVAS_STATSTEXT_XOFFSET = BORDER_SIZE,
     CANVAS_STATSTEXT_YOFFSET = 2 * BORDER_SIZE + TEXT_HEIGHT + CANVAS_HOLD_HEIGHT + 3 * MARGIN_SIZE,
     CANVAS_STATSTEXT_WIDTH = CANVAS_HOLD_WIDTH,
@@ -87,6 +92,7 @@ export default class Renderer {
             CANVAS_QUEUETEXT_XOFFSET + CANVAS_QUEUETEXT_WIDTH / 2, CANVAS_QUEUETEXT_YOFFSET + CANVAS_QUEUETEXT_HEIGHT,
             "center", "bottom");
         this.drawStats(gameStats);
+        this.drawClearOutput(gameStats);
     }
 
     drawReady() {
@@ -96,23 +102,38 @@ export default class Renderer {
             "center", "middle");
     }
 
-    drawGo(){
+    drawGo() {
         this.drawTextBackground();
         this.drawText("GO", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR_YELLOW,
             CANVAS_BOARD_XOFFSET + Constants.BOARD_WIDTH / 2 * BOX_SIZE, CANVAS_BOARD_YOFFSET + (Config.VISIBLE_BOARD_HEIGHT / 2 + 0.5) * BOX_SIZE,
             "center", "middle");
     }
 
-    drawPaused(){
+    drawPaused() {
         this.drawTextBackground();
         this.drawText("PAUSED", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR_YELLOW,
             CANVAS_BOARD_XOFFSET + Constants.BOARD_WIDTH / 2 * BOX_SIZE, CANVAS_BOARD_YOFFSET + (Config.VISIBLE_BOARD_HEIGHT / 2 + 0.5) * BOX_SIZE,
             "center", "middle");
     }
 
-    drawTextBackground(){
+    drawGameOver() {
+        this.drawTextBackground();
+        this.drawText("GAME OVER", Config.TEXT_FONT, Config.FONT_SIZE_LARGE, Config.FONT_COLOR_YELLOW,
+            CANVAS_BOARD_XOFFSET + Constants.BOARD_WIDTH / 2 * BOX_SIZE, CANVAS_BOARD_YOFFSET + (Config.VISIBLE_BOARD_HEIGHT / 2 + 0.5) * BOX_SIZE,
+            "center", "middle");
+    }
+
+    drawTextBackground() {
         this.ctx.fillStyle = Config.FONT_BACKGROUND_COLOR;
         this.ctx.fillRect(CANVAS_BOARD_XOFFSET, CANVAS_BOARD_YOFFSET + (Config.VISIBLE_BOARD_HEIGHT / 2 - 1) * BOX_SIZE, CANVAS_BOARD_WIDTH, 3 * BOX_SIZE + 1);
+    }
+
+    drawClearOutput(gameStats) {
+        this.ctx.clearRect(CANVAS_CLEARTEXT_XOFFSET, CANVAS_CLEARTEXT_YOFFSET, CANVAS_CLEARTEXT_WIDTH, CANVAS_CLEARTEXT_HEIGHT);
+        this.ctx.fillStyle = Config.FONT_COLOR_WHITE;
+        this.drawText(gameStats['clearOutput'], Config.TEXT_FONT, Config.FONT_SIZE_SMALLEST, Config.FONT_COLOR_WHITE,
+            CANVAS_CLEARTEXT_XOFFSET + CANVAS_CLEARTEXT_WIDTH / 2, CANVAS_CLEARTEXT_YOFFSET,
+            "center", "top");
     }
 
     drawText(text, font, size, color, x, y, align, baseline) {
@@ -190,7 +211,7 @@ export default class Renderer {
         this.ctx.stroke();
     }
 
-    eraseAll(){
+    eraseAll() {
         this.ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     }
 

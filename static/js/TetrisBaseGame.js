@@ -25,6 +25,7 @@ export default class TetrisBaseGame {
         };
 
         // Scoring variables
+        this.clearOutput = "";
         this.score = 0;
         this.totalLinesCleared = 0;
         this.level = 1;
@@ -55,7 +56,8 @@ export default class TetrisBaseGame {
             'linesCleared': this.totalLinesCleared,
             'level': this.level,
             'currentCombo': this.currentCombo,
-            'maxCombo': this.maxCombo
+            'maxCombo': this.maxCombo,
+            'clearOutput': this.clearOutput
         };
     }
 
@@ -164,13 +166,13 @@ export default class TetrisBaseGame {
                 }
             }
         }
-        let clearOutput = "";
+        this.clearOutput = "";
         let tempScore = Constants.ACTION_SCORE[currClearAction];
         let difficult = Constants.ACTION_DIFFICULTY[currClearAction];
         let b2bChainBreak = Constants.ACTION_BACK_TO_BACK_CHAIN_BREAK[currClearAction];
 
         if (this.backToBack && difficult) {
-            clearOutput += "B2B ";
+            this.clearOutput += "B2B ";
             if (currClearAction == "Tetris PC") {
                 tempScore = Constants.ACTION_SCORE['B2B Tetris PC'];
             } else if (difficult) {
@@ -178,14 +180,16 @@ export default class TetrisBaseGame {
             }
         }
         if (!(currClearAction == "Softdrop" || currClearAction == "Harddrop")) {
-            clearOutput += currClearAction;
+            if (currClearAction != "None") {
+                this.clearOutput += currClearAction;
+            }
             if (linesCleared != 0) {
                 this.currentCombo += 1;
                 if (this.currentCombo > this.maxCombo) {
                     this.maxCombo = this.currentCombo;
                 }
                 if (this.currentCombo > 0) {
-                    clearOutput += " Combo " + this.currentCombo;
+                    this.clearOutput += " Combo " + this.currentCombo;
                 }
                 tempScore += Constants.ACTION_SCORE['Combo'] * this.currentCombo;
             } else {
@@ -199,10 +203,6 @@ export default class TetrisBaseGame {
             this.backToBack = true;
         } else if (b2bChainBreak) {
             this.backToBack = false;
-        }
-
-        if (clearOutput != "None" && clearOutput != "") {
-            console.log(clearOutput);
         }
     }
 

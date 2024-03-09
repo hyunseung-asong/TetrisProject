@@ -64,7 +64,7 @@ export default class Piece {
             this.updatePositions();
             let testx = Constants.WALLKICK_JLSTZ[wallkickTest][i][0];
             let testy = -Constants.WALLKICK_JLSTZ[wallkickTest][i][1];
-            if (this.piece == 'I') {
+            if (this.shape == 'I') {
                 testx = Constants.WALLKICK_I[wallkickTest][i][0];
                 testy = -Constants.WALLKICK_I[wallkickTest][i][1];
             }
