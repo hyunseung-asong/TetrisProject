@@ -133,6 +133,7 @@ export default class Board {
         return board;
     }
 
+
     toStringWithPiece(piece) {
         if (piece == null) {
             return this.toString();

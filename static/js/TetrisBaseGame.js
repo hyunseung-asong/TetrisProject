@@ -1,11 +1,15 @@
 import * as Constants from "./GameConstants.js";
+import * as AI from "./AIConfig.js";
 import Board from "./Board.js";
 import Piece from "./Piece.js";
 import PieceQueue from "./PieceQueue.js";
 
 export default class TetrisBaseGame {
     constructor() {
-        // Base game variables
+        this.init();
+    }
+
+    init() {
         this.board = new Board();
         this.queue = new PieceQueue();
         this.currPiece = this.queue.grabNextPiece();
@@ -26,6 +30,7 @@ export default class TetrisBaseGame {
 
         // Scoring variables
         this.clearOutput = "";
+        this.tempScore = 0;
         this.score = 0;
         this.totalLinesCleared = 0;
         this.level = 1;
@@ -37,8 +42,8 @@ export default class TetrisBaseGame {
         this.downMovementType = "None";
         this.downMovementLines = 0;
         this.backToBack = false;
-
     }
+
 
     getGameState() {
         return {
@@ -167,16 +172,16 @@ export default class TetrisBaseGame {
             }
         }
         this.clearOutput = "";
-        let tempScore = Constants.ACTION_SCORE[currClearAction];
+        this.tempScore = Constants.ACTION_SCORE[currClearAction];
         let difficult = Constants.ACTION_DIFFICULTY[currClearAction];
         let b2bChainBreak = Constants.ACTION_BACK_TO_BACK_CHAIN_BREAK[currClearAction];
 
         if (this.backToBack && difficult) {
             this.clearOutput += "B2B ";
             if (currClearAction == "Tetris PC") {
-                tempScore = Constants.ACTION_SCORE['B2B Tetris PC'];
+                this.tempScore = Constants.ACTION_SCORE['B2B Tetris PC'];
             } else if (difficult) {
-                tempScore *= 1.5;
+                this.tempScore *= 1.5;
             }
         }
         if (!(currClearAction == "Softdrop" || currClearAction == "Harddrop")) {
@@ -191,13 +196,13 @@ export default class TetrisBaseGame {
                 if (this.currentCombo > 0) {
                     this.clearOutput += " Combo " + this.currentCombo;
                 }
-                tempScore += Constants.ACTION_SCORE['Combo'] * this.currentCombo;
+                this.tempScore += Constants.ACTION_SCORE['Combo'] * this.currentCombo;
             } else {
                 this.currentCombo = -1;
             }
         }
-        tempScore *= this.level;
-        this.score += tempScore;
+        this.tempScore *= this.level;
+        this.score += this.tempScore;
 
         if (difficult) {
             this.backToBack = true;
@@ -220,10 +225,35 @@ export default class TetrisBaseGame {
 
 
     setInput(input) {
-        this.inputs[input] = true;
+        switch (input) {
+            case "MoveLeft":
+                this.inputs["MoveLeft"] = true;
+                break;
+            case "MoveRight":
+                this.inputs["MoveRight"] = true;
+                break;
+            case "Softdrop":
+                this.inputs["Softdrop"] = true;
+                break;
+            case "Harddrop":
+                this.inputs["Harddrop"] = true;
+                break;
+            case "RotateCCW":
+                this.inputs["RotateCCW"] = true;
+                break;
+            case "RotateCW":
+                this.inputs["RotateCW"] = true;
+                break;
+            case "Hold":
+                this.inputs["Hold"] = true;
+                break;
+            default:
+                break;
+        }
     }
 
     handleInputs() {
+        this.tempScore = 0;
         Object.keys(this.inputs).forEach((input) => {
 
             switch (input) {
@@ -233,6 +263,7 @@ export default class TetrisBaseGame {
                             this.currPiece.move(-1, 0);
                             this.rotationBeforeMovementOccurred = false;
                         }
+                        this.tempScore -= 1;
                     }
                     break;
                 case "MoveRight":
@@ -241,6 +272,7 @@ export default class TetrisBaseGame {
                             this.currPiece.move(1, 0);
                             this.rotationBeforeMovementOccurred = false;
                         }
+                        this.tempScore -= 1;
                     }
                     break;
                 case "Softdrop":
@@ -251,6 +283,10 @@ export default class TetrisBaseGame {
                             this.downMovementOccurred = true;
                             this.downMovementType = "Softdrop";
                             this.downMovementLines = 1;
+                            this.tempScore += 1;
+                        }else{
+                            this.piecePlaced = true;
+                            this.tempScore += 10;
                         }
                     }
                     break;
@@ -276,6 +312,8 @@ export default class TetrisBaseGame {
                     if (this.inputs[input]) {
                         this.currPiece.rotate(this.board, -1);
                         this.rotationBeforeMovementOccurred = true;
+                        
+                        this.tempScore -= 1;
                         // SHOULD ONLY BE WHEN SUCCESSFUL
                     }
                     break;
@@ -283,6 +321,7 @@ export default class TetrisBaseGame {
                     if (this.inputs[input]) {
                         this.currPiece.rotate(this.board, 1);
                         this.rotationBeforeMovementOccurred = true;
+                        this.tempScore -= 1;
                         // SHOULD ONLY BE WHEN SUCCESSFUL
                     }
                     break;

@@ -1,12 +1,15 @@
 import Tetris from "./Tetris.js";
 import * as Config from "./Config.js";
+import TetrisAI from "./TetrisAI.js";
+import Renderer from "./Renderer.js";
+
+
+const tetrisCanvas = document.getElementById('tetris-canvas');
 
 const font = new FontFace(Config.TEXT_FONT, 'url(' + Config.TEXT_FONT_LOCATION + ')');
 font.load().then(
     () => {
         document.fonts.add(font);
-        let game = new Tetris(document.getElementById("game1"));
-        game.start();
 
     },
     (err) => {
@@ -14,8 +17,18 @@ font.load().then(
     },
 );
 
-// let game2 = new Tetris(document.getElementById("game2"));
-// game2.start();
 
-// let game3 = new Tetris(document.getElementById("game3"));
-// game3.start();
+const env = new TetrisAI();
+const renderer = new Renderer(tetrisCanvas);
+const delay = millis => new Promise((resolve, reject) => {
+    setTimeout(_ => resolve(), millis)
+});
+
+
+renderer.drawGame(env.getGameState(), env.getGameStats());
+await delay(1000);
+
+env.setInput(0);
+env.update();
+
+renderer.drawGame(env.getGameState(), env.getGameStats());

@@ -7,6 +7,8 @@
     <title>Game Title</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
     <!-- <link rel="preload" href="static/fonts/Montserrat-Medium.ttf" as="font" type="font/ttf" crossorigin="anonymous"> -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/nicolaspanel/numjs@0.15.1/dist/numjs.min.js"></script>
 </head>
 
 <body>
@@ -14,7 +16,7 @@
         <nav></nav>
         <div id="background"></div>
         <div id="main" class="game-container">
-            <canvas id="game1" class="game-canvas" tabindex='0'></canvas>
+            <canvas id="tetris-canvas" class="game-canvas" tabindex='0'></canvas>
             <!-- <canvas id="game2" class="game-canvas" tabindex='0'></canvas> -->
             <!-- <canvas id="game3" class="game-canvas" tabindex='0'></canvas> -->
 
