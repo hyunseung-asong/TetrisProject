@@ -152,31 +152,31 @@ class PolicyNetwork {
 }
 
 
+const MODEL_SAVE_PATH_ = 'indexeddb://tetris-ai-v1';
 export class SaveablePolicyNetwork extends PolicyNetwork {
     constructor(hiddenLayerSizesOrModel) {
         super(hiddenLayerSizesOrModel);
     }
 
     async saveModel() {
-        return await this.policyNet.save(AI.LOCAL_MODEL_SAVE_PATH_);
+        return await this.policyNet.save(MODEL_SAVE_PATH_);
     }
 
     static async loadModel() {
         const modelsInfo = await tf.io.listModels();
-        console.log("loading model");
-        if (AI.INDEXEDDB_MODEL_SAVE_PATH_ in modelsInfo) {
+        if (MODEL_SAVE_PATH_ in modelsInfo) {
             console.log(`Loading existing model...`);
-            const model = await tf.loadLayersModel(AI.INDEXEDDB_MODEL_SAVE_PATH_);
-            console.log(`Loaded model from ${AI.INDEXEDDB_MODEL_SAVE_PATH_}`);
+            const model = await tf.loadLayersModel(MODEL_SAVE_PATH_);
+            console.log(`Loaded model from ${MODEL_SAVE_PATH_}`);
             return new SaveablePolicyNetwork(model);
         } else {
-            throw new Error(`Cannot find model at ${AI.INDEXEDDB_MODEL_SAVE_PATH_}.`);
+            throw new Error(`Cannot find model at ${MODEL_SAVE_PATH_}.`);
         }
     }
 
     static async checkStoredModelStatus() {
-        const localSavePath = AI.LOCAL_MODEL_SAVE_PATH_;
-        const indexeddbSavePath = AI.INDEXEDDB_MODEL_SAVE_PATH_;
+        // const localSavePath = AI.LOCAL_MODEL_SAVE_PATH_;
+        // const indexeddbSavePath = AI.INDEXEDDB_MODEL_SAVE_PATH_;
         // fetch(localSavePath)
         //     .then(response => {
         //         // Check if the response is ok (status 200)
@@ -203,11 +203,11 @@ export class SaveablePolicyNetwork extends PolicyNetwork {
         //     });
         const modelsInfo = await tf.io.listModels();
         console.log(modelsInfo);
-        return modelsInfo[AI.INDEXEDDB_MODEL_SAVE_PATH_];
+        return modelsInfo[MODEL_SAVE_PATH_];
     }
 
     async removeModel() {
-        return await tf.io.removeModel(AI.INDEXEDDB_MODEL_SAVE_PATH_);
+        return await tf.io.removeModel(MODEL_SAVE_PATH_);
     }
 
     hiddenLayerSizes() {

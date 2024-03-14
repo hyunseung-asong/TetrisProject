@@ -18,7 +18,7 @@ export const
     FALL_FREQ = 1.5 * 1000,
 
     // appearance settings
-    FPS = 30,
+    FPS = 10,
     VISIBLE_BOARD_HEIGHT = 20,
     PIECE_COLORS = {
         'I': 'rgba(0, 255, 255, 1)',

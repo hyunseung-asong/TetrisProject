@@ -42,6 +42,10 @@ export default class TetrisBaseGame {
         this.downMovementType = "None";
         this.downMovementLines = 0;
         this.backToBack = false;
+        this.currMove = "None";
+        this.prevMove = "None";
+        this.numPiecesPlaced = 0;
+        this.stepsBeforePiecePlaced = 0;
     }
 
 
@@ -84,6 +88,8 @@ export default class TetrisBaseGame {
             if (!this.board.isValidPosition(this.currPiece)) {
                 this.gameOver = true;
             } else {
+                this.numPiecesPlaced += 1;
+                this.stepsBeforePiecePlaced = 0;
                 this.board.addPiece(this.currPiece);
                 let boardBeforeClear = new Board();
                 boardBeforeClear.board = this.board.getDeepCopy();
@@ -110,11 +116,14 @@ export default class TetrisBaseGame {
         let currClearAction = "None";
         if (this.downMovementType == "Softdrop") {
             currClearAction = "Softdrop";
-            this.score += Constants.ACTION_SCORE["Softdrop"];
+            this.tempScore = Constants.ACTION_SCORE["Softdrop"];
+            this.score += this.tempScore;
             return;
         } else if (this.downMovementType == "Harddrop") {
             currClearAction = "Harddrop";
-            this.score += Constants.ACTION_SCORE["Harddrop"] * this.downMovementLines;
+            this.tempScore = Constants.ACTION_SCORE["Harddrop"] * this.downMovementLines;
+            this.score += this.tempScore;
+            return;
         } else {
             if (this.currPiece.shape == "T" && this.rotationBeforeMovementOccurred) {
                 const tSpinCalc = boardBeforeClear.tSpinInfo(this.currPiece, boardBeforeClear);
@@ -254,6 +263,8 @@ export default class TetrisBaseGame {
 
     handleInputs() {
         this.tempScore = 0;
+        this.prevMove = this.currMove;
+        this.stepsBeforePiecePlaced += 1;
         Object.keys(this.inputs).forEach((input) => {
 
             switch (input) {
@@ -263,7 +274,7 @@ export default class TetrisBaseGame {
                             this.currPiece.move(-1, 0);
                             this.rotationBeforeMovementOccurred = false;
                         }
-                        this.tempScore -= 1;
+                        this.currMove = "MoveLeft";
                     }
                     break;
                 case "MoveRight":
@@ -272,7 +283,7 @@ export default class TetrisBaseGame {
                             this.currPiece.move(1, 0);
                             this.rotationBeforeMovementOccurred = false;
                         }
-                        this.tempScore -= 1;
+                        this.currMove = "MoveRight";
                     }
                     break;
                 case "Softdrop":
@@ -283,11 +294,10 @@ export default class TetrisBaseGame {
                             this.downMovementOccurred = true;
                             this.downMovementType = "Softdrop";
                             this.downMovementLines = 1;
-                            this.tempScore += 1;
                         }else{
                             this.piecePlaced = true;
-                            this.tempScore += 10;
                         }
+                        this.currMove = "Softdrop";
                     }
                     break;
                 case "Harddrop":
@@ -306,6 +316,7 @@ export default class TetrisBaseGame {
                             this.downMovementType = "Harddrop";
                             this.downMovementLines = i - 1;
                         }
+                        this.currMove = "Harddrop";
                     }
                     break;
                 case "RotateCCW": // Rotate Left
@@ -313,16 +324,16 @@ export default class TetrisBaseGame {
                         this.currPiece.rotate(this.board, -1);
                         this.rotationBeforeMovementOccurred = true;
                         
-                        this.tempScore -= 1;
                         // SHOULD ONLY BE WHEN SUCCESSFUL
+                        this.currMove = "RotateCCW";
                     }
                     break;
                 case "RotateCW": // Rotate Right
                     if (this.inputs[input]) {
                         this.currPiece.rotate(this.board, 1);
                         this.rotationBeforeMovementOccurred = true;
-                        this.tempScore -= 1;
                         // SHOULD ONLY BE WHEN SUCCESSFUL
+                        this.currMove = "RotateCW";
                     }
                     break;
                 case "Hold":
@@ -349,7 +360,7 @@ export default class TetrisBaseGame {
                                 this.currPiece = temp;
                             }
                             this.holdAvailable = false;
-
+                            this.currMove = "Hold";
                         }
                     }
                     break;
@@ -357,6 +368,7 @@ export default class TetrisBaseGame {
                     break;
             }
         });
+        // console.log(`currMove: ${this.currMove}, prevMove: ${this.prevMove}`);  
         // all the inputs are handled, set them to false.
         Object.keys(this.inputs).forEach((input) => {
             this.inputs[input] = false;

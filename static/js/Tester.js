@@ -18,17 +18,7 @@ font.load().then(
 );
 
 
-const env = new TetrisAI();
-const renderer = new Renderer(tetrisCanvas);
-const delay = millis => new Promise((resolve, reject) => {
-    setTimeout(_ => resolve(), millis)
-});
+const env = new Tetris(tetrisCanvas);
+// const renderer = new Renderer(tetrisCanvas);
 
-
-renderer.drawGame(env.getGameState(), env.getGameStats());
-await delay(1000);
-
-env.setInput(0);
-env.update();
-
-renderer.drawGame(env.getGameState(), env.getGameStats());
+env.start();

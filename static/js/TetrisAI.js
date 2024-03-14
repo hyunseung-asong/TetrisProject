@@ -29,8 +29,6 @@ export default class TetrisAI extends TetrisBaseGame {
                 break;
             default:
                 break;
-
-
         }
     }
 
@@ -90,10 +88,21 @@ export default class TetrisAI extends TetrisBaseGame {
     // see how to load models
     // learn to run multiple instances at once
     // see if i can use gpu?
-    
+
     getReward() {
-        let reward = this.tempScore;
-        reward -= AI.ACTION_COST;
+        let reward = 0;
+        if ((this.currMove == "MoveLeft" && this.prevMove == "MoveRight") ||
+            (this.currMove == "MoveRight" && this.prevMove == "MoveLeft") ||
+            (this.currMove == "RotateCCW" && this.prevMove == "RotateCW") ||
+            (this.currMove == "RotateCW" && this.prevMove == "RotateCCW")) {
+            // console.log("in");
+            reward -= AI.EXTRANEOUS_ACTION_COST;
+        }
+        reward += this.tempScore;
+        reward += this.numPiecesPlaced;
+        reward += this.totalLinesCleared;
+        reward -= this.stepsBeforePiecePlaced;
+        console.log(reward);
         return reward;
     }
 
