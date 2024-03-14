@@ -1,4 +1,5 @@
 import TetrisBaseGame from "./TetrisBaseGame.js";
+import TetrisAI from "./TetrisAI.js";
 import Renderer from "./Renderer.js";
 import * as Config from "./Config.js";
 
@@ -12,7 +13,8 @@ export default class Tetris {
 
     init() {
         this.running = true;
-        this.game = new TetrisBaseGame();
+        // this.game = new TetrisBaseGame();
+        this.game = new TetrisAI();
         this.gameState = this.game.getGameState();
         this.gameStats = this.game.getGameStats();
         this.renderer = new Renderer(this.canvas);
@@ -77,6 +79,7 @@ export default class Tetris {
 
                         this.handleGameTimer();
                         this.game.update();
+                        this.game.getReward();
                         this.gameState = this.game.getGameState();
                         this.gameStats = this.game.getGameStats();
                         this.renderer.drawGame(this.gameState, this.gameStats);
