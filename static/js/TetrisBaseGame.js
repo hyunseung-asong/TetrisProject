@@ -91,10 +91,9 @@ export default class TetrisBaseGame {
                 this.numPiecesPlaced += 1;
                 this.stepsBeforePiecePlaced = 0;
                 this.board.addPiece(this.currPiece);
-                let boardBeforeClear = new Board();
-                boardBeforeClear.board = this.board.getDeepCopy();
+                let boardBeforeClear = this.board.getDeepCopy();
                 let linesCleared = this.board.removeCompleteLines();
-                this.updateScore(linesCleared, boardBeforeClear);
+                this.updateScore(linesCleared, boardBeforeClear.board);
                 this.totalLinesCleared += linesCleared;
                 this.level = Math.floor(this.totalLinesCleared / 10) + 1;
 
