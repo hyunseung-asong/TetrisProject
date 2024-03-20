@@ -11,6 +11,10 @@ export default class Piece {
         this.tstOrFinKicked = false;
     }
 
+    getDeepCopy(){
+        return new Piece(this.shape, this.rotation, this.x, this.y)
+    }
+
     get getLength() {
         return this.board.length;
     }

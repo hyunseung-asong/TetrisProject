@@ -224,6 +224,15 @@ export default class Tetris {
                             case Config.KEYBINDS['Hold']:
                                 this.pressedHold = true;
                                 break;
+                            case 't':
+                                // const bs = this.game.getAllBoardStates();
+                                // for(let i = 0 ; i < bs.length; i++){
+                                //     console.log(bs[i].toString());
+                                // }
+                                // console.log(this.game.board.calculateBumpiness());
+                                // console.log(this.game.board.calculateNumHoles());
+                                console.log(this.game.board.calculateAggregateHeight());
+                                break;
                             default:
                                 break;
                         }

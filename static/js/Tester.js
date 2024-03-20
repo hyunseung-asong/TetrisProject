@@ -1,4 +1,4 @@
-import Tetris from "./Tetris.js";
+import Tetris from "./tetris.js";
 import * as Config from "./Config.js";
 import TetrisAI from "./TetrisAI.js";
 import Renderer from "./Renderer.js";
@@ -19,6 +19,10 @@ font.load().then(
 
 
 const env = new Tetris(tetrisCanvas);
-// const renderer = new Renderer(tetrisCanvas);
+const renderer = new Renderer(tetrisCanvas);
 
 env.start();
+// console.log(env.game.currPiece);
+// console.log(env.game.board.toStringWithPiece(env.game.currPiece));
+// const allBoards = env.game.getAllBoardStates();
+// console.log(allBoards);
