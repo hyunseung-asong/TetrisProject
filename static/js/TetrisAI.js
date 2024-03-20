@@ -18,6 +18,7 @@ export default class TetrisAI extends TetrisBaseGame {
 
         let allBoards = [];
         let visited = [];
+        let listOfInstructions = [];
         this.dfs(this.board, this.currPiece, visited, allBoards);
         
 
@@ -36,7 +37,7 @@ export default class TetrisAI extends TetrisBaseGame {
         // need to prune same board states because some pieces have different rotation but same output.
     }
 
-    dfs(board, piece, visited, allBoards) {
+    dfs(board, piece, visited, allBoards, currentInstructions, listOfInstructions) {
         const stringRep = `${piece.shape}, ${piece.x}, ${piece.y}, ${piece.rotation}`;
         // console.log(stringRep);
         if (visited.includes(stringRep)) {
@@ -49,9 +50,11 @@ export default class TetrisAI extends TetrisBaseGame {
         
 
         if (board.isValidPosition(piece, -1, 0)) { //dfs(move left piece)
+            currentInstructions.push("Move Left");
             const tempPiece = piece.getDeepCopy();
             tempPiece.move(-1, 0);
             this.dfs(board, tempPiece, visited, allBoards);
+            currentInstructions.pop();
         }
         if (board.isValidPosition(piece, 1, 0)) { // dfs(move right piece)
             const tempPiece = piece.getDeepCopy();
