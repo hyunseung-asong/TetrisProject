@@ -162,6 +162,7 @@ export default class TetrisAI extends TetrisBaseGame {
 
 
     executeInstructions(listOfInstructions){
+        // NEED TO RENDER EACH STEP THOUGH
         console.log(listOfInstructions);
         for(let i = 0; i < listOfInstructions.length; i++){
             console.log(`setting ${listOfInstructions[i]} to true, updating...`);
