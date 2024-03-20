@@ -83,8 +83,13 @@ export default class TetrisAI extends TetrisBaseGame {
         // board state is "good" if 
         // low high difference (sum of differences of heights is low)
         // low number of holes (check if empty space underneath filled space)
-        // can score high with cleared lines // should be heavily weighted
         // low aggregate height (each column's height added up)
+        // can score high with cleared lines // should be heavily weighted
+        for(let i = 0; i < allBoardStates.length; i++){
+
+
+            const numCompleteLines = allBoardStates[i].board.calculateNumCompleteLines();
+        }
 
     }
 

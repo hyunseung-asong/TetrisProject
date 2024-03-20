@@ -14,13 +14,39 @@ export default class Board {
         }
     }
 
+    calculateNumCompleteLines(){
+        let numCompleteLines = 0;
+        for(let row = 0; row < Constants.BOARD_HEIGHT; row++){
+            if(this.isCompleteLine(row)){
+                numCompleteLines += 1;
+            }
+        }
+        return numCompleteLines;
+    }
+
+    calculateAggregateHeight(){
+        let aggHeight = 0;
+        for(let col = 0; col < Constants.BOARD_WIDTH; col++){
+            for(let row = 0; row < Constants.BOARD_HEIGHT; row++){
+                if(!this.isBlank(row, col)){
+                    aggHeight += Constants.BOARD_HEIGHT - row;
+                    break;
+                }
+            }
+        }
+        return aggHeight;
+    }
+
     calculateNumHoles(){
         let numHoles = 0;
         for(let col = 0; col < Constants.BOARD_WIDTH; col++){
+            let tempHoles = 0;
             for(let row = Constants.BOARD_HEIGHT - 1; row > 0; row--){
-                if(this.isBlank(row, col) && !this.isBlank(row - 1, col)){
-                    numHoles += 1;
-                    // should also check if holes are connected. 2 tall hole should count as 2????
+                if(!this.isBlank(row, col)){
+                    numHoles += tempHoles;
+                    tempHoles = 0;
+                }else{
+                    tempHoles += 1;
                 }
             }
         }

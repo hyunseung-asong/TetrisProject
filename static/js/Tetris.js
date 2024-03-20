@@ -230,7 +230,8 @@ export default class Tetris {
                                 //     console.log(bs[i].toString());
                                 // }
                                 // console.log(this.game.board.calculateBumpiness());
-                                console.log(this.game.board.calculateNumHoles());
+                                // console.log(this.game.board.calculateNumHoles());
+                                console.log(this.game.board.calculateAggregateHeight());
                                 break;
                             default:
                                 break;
