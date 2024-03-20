@@ -17,23 +17,21 @@ export default class TetrisAI extends TetrisBaseGame {
 
         const [allBoards, allInstructions] = this.bfs(this.board, this.currPiece);
 
-        let boardsToString = [];
-        let allBoardsPruned = [];
-        let instructionsPruned = [];
+        const boardsToString = [];
+        const allBoardsAndInstructionsPruned = [];
         for (let i = 0; i < allBoards.length; i++) {
             const strRepOfBoard = allBoards[i].board.toString();
             if (boardsToString.includes(strRepOfBoard)) {
                 continue;
             } else {
-                allBoardsPruned.push(allBoards[i]);
-                instructionsPruned.push(allInstructions[i]);
+                allBoardsAndInstructionsPruned.push([allBoards[i], allInstructions[i]]);
                 boardsToString.push(strRepOfBoard);
 
                 // console.log(allBoards[i].toString());
                 // console.log(allInstructions[i]);
             }
         }
-        return [allBoardsPruned, instructionsPruned];
+        return allBoardsAndInstructionsPruned;
     }
 
     bfs(board, start) {
@@ -74,37 +72,37 @@ export default class TetrisAI extends TetrisBaseGame {
             allBoards.push(newBoard);
             allInstructions.push(nextInstructions);
 
-            if (currentInstructions[currentInstructions.length - 1] != "Move Right") {
+            if (currentInstructions[currentInstructions.length - 1] != "MoveRight") {
                 if (board.isValidPosition(piece, -1, 0)) {
                     const nextInstructions = currentInstructions.slice();
-                    nextInstructions.push("Move Left");
+                    nextInstructions.push("MoveLeft");
                     const tempPiece = piece.getDeepCopy();
                     tempPiece.move(-1, 0);
                     queue.push([tempPiece, nextInstructions]);
                 }
             }
-            if (currentInstructions[currentInstructions.length - 1] != "Move Left") {
+            if (currentInstructions[currentInstructions.length - 1] != "MoveLeft") {
                 if (board.isValidPosition(piece, 1, 0)) {
                     const nextInstructions = currentInstructions.slice();
-                    nextInstructions.push("Move Right");
+                    nextInstructions.push("MoveRight");
                     const tempPiece = piece.getDeepCopy();
                     tempPiece.move(1, 0);
                     queue.push([tempPiece, nextInstructions]);
                 }
             }
-            if (currentInstructions[currentInstructions.length - 1] != "Rotate CCW") {
+            if (currentInstructions[currentInstructions.length - 1] != "RotateCCW") {
                 if (board.isValidRotation(piece, 1)) {
                     const nextInstructions = currentInstructions.slice();
-                    nextInstructions.push("Rotate CW");
+                    nextInstructions.push("RotateCW");
                     const tempPiece = piece.getDeepCopy();
                     tempPiece.rotate(board, 1);
                     queue.push([tempPiece, nextInstructions]);
                 }
             }
-            if (currentInstructions[currentInstructions.length - 1] != "Rotate CW") {
+            if (currentInstructions[currentInstructions.length - 1] != "RotateCW") {
                 if (board.isValidRotation(piece, -1)) {
                     const nextInstructions = currentInstructions.slice();
-                    nextInstructions.push("Rotate CCW");
+                    nextInstructions.push("RotateCCW");
                     const tempPiece = piece.getDeepCopy();
                     tempPiece.rotate(board, -1);
                     queue.push([tempPiece, nextInstructions])
@@ -136,34 +134,41 @@ export default class TetrisAI extends TetrisBaseGame {
         return [allBoards, allInstructions]
     }
 
-    getBestBoardState(allBoardStates, listOfInstructions) {
+    getBestBoardState(allBoardStatesAndInstructions) {
         // board state is "good" if 
         // low high difference (sum of differences of heights is low)
         // low number of holes (check if empty space underneath filled space)
         // low aggregate height (each column's height added up)
         // can score high with cleared lines // should be heavily weighted
-        let bestInstructions = [];
-        let bestBoardState = allBoardStates[0];
+        let bestBoardStateAndInstructions = [];
         let bestBoardWeightedScore = -Infinity;
-        for (let i = 0; i < allBoardStates.length; i++) {
-            const bumpiness = allBoardStates[i].calculateBumpiness();
-            const numHoles = allBoardStates[i].calculateNumHoles();
-            const aggHeight = allBoardStates[i].calculateAggregateHeight();
-            const numCompleteLines = allBoardStates[i].calculateNumCompleteLines();
-            const score = this.updateScore(numCompleteLines, allBoardStates[i].board);
+        for (let i = 0; i < allBoardStatesAndInstructions.length; i++) {
+            const boardState = allBoardStatesAndInstructions[i][0];
+            const bumpiness = boardState.calculateBumpiness();
+            const numHoles = boardState.calculateNumHoles();
+            const aggHeight = boardState.calculateAggregateHeight();
+            const numCompleteLines = boardState.calculateNumCompleteLines();
+            const score = this.updateScore(numCompleteLines, boardState.board);
             const weightedScore = (AI.BUMPINESS_WEIGHT * bumpiness) + (AI.HOLES_WEIGHT * numHoles) + (AI.HEIGHT_WEIGHT * aggHeight) + (AI.SCORE_WEIGHT * score);
             // WE SHOULD USE GENETIC ALGORITHM TO CALCULATE THIS VALUE FOR OUR OWN PROGRAM
 
             if (weightedScore > bestBoardWeightedScore) {
                 bestBoardWeightedScore = weightedScore;
-                bestBoardState = allBoardStates[i];
-                bestInstructions = listOfInstructions[i];
+                bestBoardStateAndInstructions = allBoardStatesAndInstructions[i];
             }
         }
-        return [bestBoardState, bestInstructions];
+        return bestBoardStateAndInstructions;
     }
 
 
+    executeInstructions(listOfInstructions){
+        console.log(listOfInstructions);
+        for(let i = 0; i < listOfInstructions.length; i++){
+            console.log(`setting ${listOfInstructions[i]} to true, updating...`);
+            this.inputs[listOfInstructions[i]] = true;
+            this.update();
+        }
+    }
 
     // setInput(input) {
     //     switch (input) {
@@ -248,20 +253,15 @@ export default class TetrisAI extends TetrisBaseGame {
     // see if i can use gpu?
 
     getReward() {
-        let reward = 0;
-        if ((this.currMove == "MoveLeft" && this.prevMove == "MoveRight") ||
-            (this.currMove == "MoveRight" && this.prevMove == "MoveLeft") ||
-            (this.currMove == "RotateCCW" && this.prevMove == "RotateCW") ||
-            (this.currMove == "RotateCW" && this.prevMove == "RotateCCW")) {
-            // console.log("in");
-            reward -= AI.EXTRANEOUS_ACTION_COST;
-        }
-        reward += this.tempScore;
-        reward += this.numPiecesPlaced;
-        reward += this.totalLinesCleared;
-        reward -= this.stepsBeforePiecePlaced;
-        console.log(reward);
-        return reward;
+        const bumpiness = this.board.calculateBumpiness();
+        const numHoles = this.board.calculateNumHoles();
+        const aggHeight = this.board.calculateAggregateHeight();
+        const numCompleteLines = this.board.calculateNumCompleteLines();
+        const score = this.updateScore(numCompleteLines, this.board.board);
+        const weightedScore = (AI.BUMPINESS_WEIGHT * bumpiness) + (AI.HOLES_WEIGHT * numHoles) + (AI.HEIGHT_WEIGHT * aggHeight) + (AI.SCORE_WEIGHT * score);
+        // WE SHOULD USE GENETIC ALGORITHM TO CALCULATE THIS VALUE FOR OUR OWN PROGRAM
+
+        return weightedScore;
     }
 
     getIsDone() {

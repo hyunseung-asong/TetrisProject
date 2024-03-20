@@ -168,6 +168,10 @@ export default class Board {
                 testy = -Constants.WALLKICK_I[wallkickTest][i][1];
             }
             if (this.isValidPosition(piece, testx, testy)) {
+                // this.move(testx, testy);
+                // this.updatePositions();
+                piece.rotation = preRotation;
+                piece.updatePositions();
                 return true;
             } else {
                 piece.rotation = preRotation;

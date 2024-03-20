@@ -270,12 +270,13 @@ export async function setUpUI() {
         while (!isDone) {
             steps++;
             tf.tidy(() => {
-                const action = policyNet.getActions(tetrisEnv.getStateTensor())[0];
+                const allBoardEndStates = tetrisEnv.game.getAllBoardStates();
+                const action = policyNet.getActions(tetrisEnv.getStateTensor(), allBoardEndStates.length)[0];
                 logStatus(
                     `Test in progress. ` +
                     `Action: ${action === 1 ? '<--' : ' -->'} (Step ${steps})`);
-                tetrisEnv.setInput(action);
-                tetrisEnv.update();
+                // tetrisEnv.setInput(action);
+                // tetrisEnv.update();
                 isDone = tetrisEnv.getIsDone();
                 tetrisRenderer.drawGame(tetrisEnv.getGameState(), tetrisEnv.getGameStats());
             });

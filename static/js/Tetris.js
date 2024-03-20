@@ -224,10 +224,11 @@ export default class Tetris {
                                 this.pressedHold = true;
                                 break;
                             case 't':
-                                const [allBoardStates, allInstructions] = this.game.getAllBoardStates();
-                                const [bestBoardState, bestInstructions] = this.game.getBestBoardState(allBoardStates, allInstructions);
-                                console.log(bestBoardState.toString());
-                                console.log(bestInstructions);
+                                const allBoardStatesAndInstructions = this.game.getAllBoardStates();
+                                const bestBoardStateAndInstructions = this.game.getBestBoardState(allBoardStatesAndInstructions);
+                                console.log(bestBoardStateAndInstructions[0].toString());
+                                console.log(bestBoardStateAndInstructions[1]);
+                                this.game.executeInstructions(bestBoardStateAndInstructions[1]);
                                 // for(let i = 0 ; i < bs.length; i++){
                                 //     console.log(bs[i].toString());
                                 // }

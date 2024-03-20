@@ -37,8 +37,6 @@ class PolicyNetwork {
         const gameSteps = [];
         onGameEnd(0, numGames);
         for (let i = 0; i < numGames; ++i) {
-            // Randomly initialize the state of the cart-pole system at the beginning
-            // of every game.
             // tetrisEnv.setRandomState();
             tetrisEnv.init();
             const gameRewards = [];
@@ -47,15 +45,19 @@ class PolicyNetwork {
                 // For every step of the game, remember gradients of the policy
                 // network's weights with respect to the probability of the action
                 // choice that lead to the reward.
+                const allBoardEndStates = tetrisEnv.game.getAllBoardStates();
                 const gradients = tf.tidy(() => {
                     const inputTensor = tetrisEnv.getStateTensor();
-                    return this.getGradientsAndSaveActions(inputTensor).grads;
+                    return this.getGradientsAndSaveActions(inputTensor, allBoardEndStates.length).grads;
                 });
 
                 this.pushGradients(gameGradients, gradients);
-                const action = this.currentActions_[0];
-                tetrisEnv.setInput(action);
-                tetrisEnv.update();
+                const action = this.currentActions_[0]; // action is the board's "best" [end state, instructions] 
+                // action[0] is the "best" board state
+                // action[1] should be the instructions to get to said state.
+                // tetrisEnv.setInput(actions[1]);
+                // tetrisEnv.update();
+                tetrisEnv.executeInstructions(actions[1]);
                 const isDone = tetrisEnv.getIsDone();
                 const reward = tetrisEnv.getReward();
 
@@ -105,9 +107,9 @@ class PolicyNetwork {
         return gameSteps;
     }
 
-    getGradientsAndSaveActions(inputTensor) {
+    getGradientsAndSaveActions(inputTensor, numEndStates) {
         const f = () => tf.tidy(() => {
-            const [logits, actions] = this.getLogitsAndActions(inputTensor);
+            const [logits, actions] = this.getLogitsAndActions(inputTensor, numEndStates);
             this.currentActions_ = actions.dataSync();
             const labels =
                 tf.sub(1, tf.tensor2d(this.currentActions_, actions.shape));
@@ -123,7 +125,7 @@ class PolicyNetwork {
 
     // probably have to change this function's left right actions to tetris actions
     // edit: instead of actions, we will give it end states.
-    getLogitsAndActions(inputs) {
+    getLogitsAndActions(inputs, numEndStates) {
         return tf.tidy(() => {
             
             const logits = this.policyNet.predict(inputs); // predicts based on input tensor
@@ -133,13 +135,15 @@ class PolicyNetwork {
             // const leftProb = tf.sigmoid(logits);
             // Probabilites of the left and right actions.
             // const leftRightProbs = tf.concat([leftProb, tf.sub(1, leftProb)], 1);
-            const actions = tf.multinomial(probs, AI.NUM_INPUTS, null, true);
+            // const actions = tf.multinomial(probs, AI.NUM_INPUTS, null, true); 
+            
+            const actions = tf.multinomial(probs, numEndStates, null, true); // action is which state the board should end at
             return [logits, actions];
         });
     }
 
-    getActions(inputs) {
-        return this.getLogitsAndActions(inputs)[1].dataSync();
+    getActions(inputs, numEndStates) {
+        return this.getLogitsAndActions(inputs, numEndStates)[1].dataSync();
     }
 
     pushGradients(record, gradients) {
