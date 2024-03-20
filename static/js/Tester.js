@@ -1,4 +1,4 @@
-import Tetris from "./tetris.js";
+import Tetris from "./Tetris.js";
 import * as Config from "./Config.js";
 import TetrisAI from "./TetrisAI.js";
 import Renderer from "./Renderer.js";

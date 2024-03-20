@@ -93,7 +93,7 @@ export default class TetrisBaseGame {
                 this.board.addPiece(this.currPiece);
                 let boardBeforeClear = this.board.getDeepCopy();
                 let linesCleared = this.board.removeCompleteLines();
-                this.updateScore(linesCleared, boardBeforeClear.board);
+                this.score += this.updateScore(linesCleared, boardBeforeClear.board);
                 this.totalLinesCleared += linesCleared;
                 this.level = Math.floor(this.totalLinesCleared / 10) + 1;
 
@@ -210,13 +210,15 @@ export default class TetrisBaseGame {
             }
         }
         this.tempScore *= this.level;
-        this.score += this.tempScore;
+        // this.score += this.tempScore;
 
         if (difficult) {
             this.backToBack = true;
         } else if (b2bChainBreak) {
             this.backToBack = false;
         }
+
+        return this.tempScore;
     }
 
 

@@ -79,7 +79,6 @@ export default class Tetris {
 
                         this.handleGameTimer();
                         this.game.update();
-                        this.game.getReward();
                         this.gameState = this.game.getGameState();
                         this.gameStats = this.game.getGameStats();
                         this.renderer.drawGame(this.gameState, this.gameStats);
@@ -225,13 +224,15 @@ export default class Tetris {
                                 this.pressedHold = true;
                                 break;
                             case 't':
-                                // const bs = this.game.getAllBoardStates();
+                                const bs = this.game.getAllBoardStates();
+                                const bestbs = this.game.getBestBoardState(bs);
                                 // for(let i = 0 ; i < bs.length; i++){
                                 //     console.log(bs[i].toString());
                                 // }
                                 // console.log(this.game.board.calculateBumpiness());
                                 // console.log(this.game.board.calculateNumHoles());
-                                console.log(this.game.board.calculateAggregateHeight());
+                                // console.log(this.game.board.calculateAggregateHeight());
+                                
                                 break;
                             default:
                                 break;

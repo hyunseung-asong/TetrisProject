@@ -8,18 +8,26 @@ export default class TetrisAI extends TetrisBaseGame {
     }
 
     getAllBoardStates() {
-        let allBoards = [];
         // at WORST CASE: dfs search through all possible combinations of moves (left, right, down, rcw, rccw)
         // at better case: use a better alg such as A* using heuristic to optimize finding best approach towards end goals
-        let visited = []; // keep track of string representation of x, y, rotation such as "3, 3, 0".
+
+        // TODO:
+        // future pieces, instructions.
+        //  CHECK FOR MORE THAN JUST CURRENT PIECE. CHECK ALL FUTURE PIECES. (IF COMPUTATIONALLY POSSIBLE, THINK ABOUT WHATS LEFT IN BAG TO COMPUTE EVEN FURTHER BEYOND)
+        //  GET THE LIST OF INSTRUCTIONS NEEDED TO GET TO SAID POSITION
+
+        let allBoards = [];
+        let visited = [];
         this.dfs(this.board, this.currPiece, visited, allBoards);
+        
+
         let boardsToString = [];
         let allBoardsPruned = [];
-        for(let i = 0; i < allBoards.length; i++){
+        for (let i = 0; i < allBoards.length; i++) {
             const strRepOfBoard = allBoards[i].board.toString();
-            if(boardsToString.includes(strRepOfBoard)){
+            if (boardsToString.includes(strRepOfBoard)) {
                 continue;
-            }else{
+            } else {
                 allBoardsPruned.push(allBoards[i]);
                 boardsToString.push(strRepOfBoard);
             }
@@ -29,16 +37,13 @@ export default class TetrisAI extends TetrisBaseGame {
     }
 
     dfs(board, piece, visited, allBoards) {
-        const stringRep = `${piece.x}, ${piece.y}, ${piece.rotation}`;
-        console.log(stringRep);
+        const stringRep = `${piece.shape}, ${piece.x}, ${piece.y}, ${piece.rotation}`;
+        // console.log(stringRep);
         if (visited.includes(stringRep)) {
             return;
         } else {
             visited.push(stringRep);
         }
-        // if(!board.isValidPosition(piece, 0, 0)){
-        //     return;
-        // }
 
         // need to see if moving down would place the piece. If it does, then add the piece to copy of board. add that board to all board  states.
         
@@ -53,7 +58,12 @@ export default class TetrisAI extends TetrisBaseGame {
             tempPiece.move(1, 0);
             this.dfs(board, tempPiece, visited, allBoards);
         }
-        
+        if (board.isValidPosition(piece, 0, 1)) { // dfs(move down piece)
+            const tempPiece = piece.getDeepCopy();
+            tempPiece.move(0, 1);
+            this.dfs(board, tempPiece, visited, allBoards);
+        }
+
         // dfs(rotate piece cw)
         const rotatedCWPiece = piece.getDeepCopy();
         rotatedCWPiece.rotate(board, 1);
@@ -64,33 +74,52 @@ export default class TetrisAI extends TetrisBaseGame {
         rotatedCCWPiece.rotate(board, -1);
         this.dfs(board, rotatedCCWPiece, visited, allBoards);
 
-        if(!board.isValidPosition(piece, 0, 1)){
+        // dfs using hold
+        if(this.holdAvailable){
+            if(this.heldPiece == null){
+                const nextPieceInQueue = this.queue.nextPieces[0].getDeepCopy();
+                this.dfs(this.board, nextPieceInQueue, visited, allBoards);
+            }else{
+                const heldPiece = this.heldPiece.getDeepCopy();
+                this.dfs(this.board, heldPiece, visited, allBoards);
+            }
+        }
+
+        if (!board.isValidPosition(piece, 0, 1)) {
             // piece can be placed here.
             const newBoard = board.getDeepCopy();
-            console.log(newBoard.toString());
             newBoard.addPiece(piece);
             allBoards.push(newBoard);
-            console.log("added new board to all boards");
+            // console.log("added new board to all boards");
             return;
-        }else{ // dfs(move down piece)
-            const tempPiece = piece.getDeepCopy();
-            tempPiece.move(0, 1);
-            this.dfs(board, tempPiece, visited, allBoards);
         }
     }
 
-    getBestBoardState(allBoardStates){
+    getBestBoardState(allBoardStates) {
         // board state is "good" if 
         // low high difference (sum of differences of heights is low)
         // low number of holes (check if empty space underneath filled space)
         // low aggregate height (each column's height added up)
         // can score high with cleared lines // should be heavily weighted
-        for(let i = 0; i < allBoardStates.length; i++){
+        let bestBoardState = allBoardStates[0];
+        let bestBoardWeightedScore = -Infinity;
+        for (let i = 0; i < allBoardStates.length; i++) {
+            const bumpiness = allBoardStates[i].calculateBumpiness();
+            const numHoles = allBoardStates[i].calculateNumHoles();
+            const aggHeight = allBoardStates[i].calculateAggregateHeight();
+            const numCompleteLines = allBoardStates[i].calculateNumCompleteLines();
+            const score = this.updateScore(numCompleteLines, allBoardStates[i].board);
+            const weightedScore = (AI.BUMPINESS_WEIGHT * bumpiness) + (AI.HOLES_WEIGHT * numHoles) + (AI.HEIGHT_WEIGHT * aggHeight) + (AI.SCORE_WEIGHT * score);
+            // WE SHOULD USE GENETIC ALGORITHM TO CALCULATE THIS VALUE FOR OUR OWN PROGRAM
 
-
-            const numCompleteLines = allBoardStates[i].board.calculateNumCompleteLines();
+            if (weightedScore > bestBoardWeightedScore) {
+                bestBoardWeightedScore = weightedScore;
+                bestBoardState = allBoardStates[i];
+            }
         }
-
+        console.log(bestBoardState.toString());
+        console.log(bestBoardWeightedScore);
+        return bestBoardState;
     }
 
 
@@ -190,7 +219,7 @@ export default class TetrisAI extends TetrisBaseGame {
         reward += this.numPiecesPlaced;
         reward += this.totalLinesCleared;
         reward -= this.stepsBeforePiecePlaced;
-        // console.log(reward);
+        console.log(reward);
         return reward;
     }
 

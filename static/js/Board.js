@@ -14,21 +14,21 @@ export default class Board {
         }
     }
 
-    calculateNumCompleteLines(){
+    calculateNumCompleteLines() {
         let numCompleteLines = 0;
-        for(let row = 0; row < Constants.BOARD_HEIGHT; row++){
-            if(this.isCompleteLine(row)){
+        for (let row = 0; row < Constants.BOARD_HEIGHT; row++) {
+            if (this.isCompleteLine(row)) {
                 numCompleteLines += 1;
             }
         }
         return numCompleteLines;
     }
 
-    calculateAggregateHeight(){
+    calculateAggregateHeight() {
         let aggHeight = 0;
-        for(let col = 0; col < Constants.BOARD_WIDTH; col++){
-            for(let row = 0; row < Constants.BOARD_HEIGHT; row++){
-                if(!this.isBlank(row, col)){
+        for (let col = 0; col < Constants.BOARD_WIDTH; col++) {
+            for (let row = 0; row < Constants.BOARD_HEIGHT; row++) {
+                if (!this.isBlank(row, col)) {
                     aggHeight += Constants.BOARD_HEIGHT - row;
                     break;
                 }
@@ -37,15 +37,15 @@ export default class Board {
         return aggHeight;
     }
 
-    calculateNumHoles(){
+    calculateNumHoles() {
         let numHoles = 0;
-        for(let col = 0; col < Constants.BOARD_WIDTH; col++){
+        for (let col = 0; col < Constants.BOARD_WIDTH; col++) {
             let tempHoles = 0;
-            for(let row = Constants.BOARD_HEIGHT - 1; row > 0; row--){
-                if(!this.isBlank(row, col)){
+            for (let row = Constants.BOARD_HEIGHT - 1; row > 0; row--) {
+                if (!this.isBlank(row, col)) {
                     numHoles += tempHoles;
                     tempHoles = 0;
-                }else{
+                } else {
                     tempHoles += 1;
                 }
             }
@@ -53,19 +53,24 @@ export default class Board {
         return numHoles;
     }
 
-    calculateBumpiness(){
+    calculateBumpiness() {
         let bumpiness = 0;
-        let heights = [];
-        for(let col = 0; col < Constants.BOARD_WIDTH; col++){
-            for(let row = 0; row < Constants.BOARD_HEIGHT; row++){
-                if(!this.isBlank(row, col)){
-                    heights.push(row);
+        let currHeight = 0;
+        let prevHeight = 0;
+        for (let col = 0; col < Constants.BOARD_WIDTH; col++) {
+            currHeight = 0;
+            for (let row = 0; row < Constants.BOARD_HEIGHT; row++) {
+                if (!this.isBlank(row, col)) {
+                    currHeight = Constants.BOARD_HEIGHT - row;
                     break;
                 }
             }
-        }
-        for(let i = 0; i < heights.length - 1; i++){
-            bumpiness += Math.abs(heights[i] - heights[i + 1]);
+            if (col == 0) {
+                prevHeight = currHeight;
+            } else {
+                bumpiness += Math.abs(currHeight - prevHeight);
+                prevHeight = currHeight;
+            }
         }
         return bumpiness;
     }
@@ -109,14 +114,14 @@ export default class Board {
     }
 
     addPiece(piece) {
-        for(let i = 0; i < piece.positions.length; i++){
+        for (let i = 0; i < piece.positions.length; i++) {
             const y = piece.positions[i][0];
             const x = piece.positions[i][1];
             this.board[y][x] = piece.shape;
         }
     }
 
-    isValidPosition(piece, adjx=0, adjy=0) {
+    isValidPosition(piece, adjx = 0, adjy = 0) {
         for (let i = 0; i < piece.positions.length; i++) {
             let posy = piece.positions[i][0];
             let posx = piece.positions[i][1];
@@ -177,12 +182,12 @@ export default class Board {
         return true;
     }
 
-    getDeepCopy(){
+    getDeepCopy() {
         const tempBoard = new Board();
         let newBoard = [];
-        for(let row = 0; row < Constants.BOARD_HEIGHT; row++){
+        for (let row = 0; row < Constants.BOARD_HEIGHT; row++) {
             let r = [];
-            for(let col = 0 ; col < Constants.BOARD_WIDTH; col++){
+            for (let col = 0; col < Constants.BOARD_WIDTH; col++) {
                 r.push(this.board[row][col]);
             }
             newBoard.push(r);
