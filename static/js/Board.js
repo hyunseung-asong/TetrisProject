@@ -133,6 +133,50 @@ export default class Board {
         return true;
     }
 
+    isValidRotation(piece, adjr){
+        if (piece.shape == 'O') {
+            return false;
+        }
+        const numRotations = Constants.PIECE_SHAPES[piece.shape].length;
+        const preRotation = piece.rotation;
+        const postRotation = (((piece.rotation + adjr) % numRotations) + numRotations) % numRotations;
+        let wallkickTest = -1;
+        if (preRotation == 0 && postRotation == 1) {
+            wallkickTest = 0;
+        } else if (preRotation == 1 && postRotation == 0) {
+            wallkickTest = 1;
+        } else if (preRotation == 1 && postRotation == 2) {
+            wallkickTest = 2;
+        } else if (preRotation == 2 && postRotation == 1) {
+            wallkickTest = 3;
+        } else if (preRotation == 2 && postRotation == 3) {
+            wallkickTest = 4;
+        } else if (preRotation == 3 && postRotation == 2) {
+            wallkickTest = 5;
+        } else if (preRotation == 3 && postRotation == 0) {
+            wallkickTest = 6;
+        } else if (preRotation == 0 && postRotation == 3) {
+            wallkickTest = 7;
+        }
+        for (let i = 0; i < Constants.WALLKICK_JLSTZ[i].length; i++) {
+            piece.rotation = postRotation;
+            piece.updatePositions();
+            let testx = Constants.WALLKICK_JLSTZ[wallkickTest][i][0];
+            let testy = -Constants.WALLKICK_JLSTZ[wallkickTest][i][1];
+            if (piece.shape == 'I') {
+                testx = Constants.WALLKICK_I[wallkickTest][i][0];
+                testy = -Constants.WALLKICK_I[wallkickTest][i][1];
+            }
+            if (this.isValidPosition(piece, testx, testy)) {
+                return true;
+            } else {
+                piece.rotation = preRotation;
+                piece.updatePositions();
+            }
+        }
+        return false;
+    }
+
     removeCompleteLines() {
         let numRemovedLines = 0;
         let row = Constants.BOARD_HEIGHT - 1;

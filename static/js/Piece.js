@@ -37,6 +37,7 @@ export default class Piece {
         this.updatePositions();
     }
 
+    
 
     rotate(board, adjr) {
         if (this.shape == 'O') {

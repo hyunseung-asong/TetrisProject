@@ -122,10 +122,12 @@ class PolicyNetwork {
 
 
     // probably have to change this function's left right actions to tetris actions
+    // edit: instead of actions, we will give it end states.
     getLogitsAndActions(inputs) {
         return tf.tidy(() => {
-            const logits = this.policyNet.predict(inputs);
-            const probs = tf.softmax(logits);
+            
+            const logits = this.policyNet.predict(inputs); // predicts based on input tensor
+            const probs = tf.softmax(logits); // makes it so sum is = 1
 
             // Get the probability of the leftward action.
             // const leftProb = tf.sigmoid(logits);

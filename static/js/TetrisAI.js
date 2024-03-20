@@ -1,5 +1,6 @@
 import TetrisBaseGame from "./TetrisBaseGame.js";
 import * as AI from "./AIConfig.js";
+import * as Constants from "./GameConstants.js"
 
 export default class TetrisAI extends TetrisBaseGame {
 
@@ -8,102 +9,140 @@ export default class TetrisAI extends TetrisBaseGame {
     }
 
     getAllBoardStates() {
-        // at WORST CASE: dfs search through all possible combinations of moves (left, right, down, rcw, rccw)
-        // at better case: use a better alg such as A* using heuristic to optimize finding best approach towards end goals
+        // using BFS to go through all possible end positions of current step.
 
         // TODO:
-        // future pieces, instructions.
+        // future pieces.
         //  CHECK FOR MORE THAN JUST CURRENT PIECE. CHECK ALL FUTURE PIECES. (IF COMPUTATIONALLY POSSIBLE, THINK ABOUT WHATS LEFT IN BAG TO COMPUTE EVEN FURTHER BEYOND)
-        //  GET THE LIST OF INSTRUCTIONS NEEDED TO GET TO SAID POSITION
 
-        let allBoards = [];
-        let visited = [];
-        let listOfInstructions = [];
-        this.dfs(this.board, this.currPiece, visited, allBoards);
-        
+        const [allBoards, allInstructions] = this.bfs(this.board, this.currPiece);
 
         let boardsToString = [];
         let allBoardsPruned = [];
+        let instructionsPruned = [];
         for (let i = 0; i < allBoards.length; i++) {
             const strRepOfBoard = allBoards[i].board.toString();
             if (boardsToString.includes(strRepOfBoard)) {
                 continue;
             } else {
                 allBoardsPruned.push(allBoards[i]);
+                instructionsPruned.push(allInstructions[i]);
                 boardsToString.push(strRepOfBoard);
+
+                // console.log(allBoards[i].toString());
+                // console.log(allInstructions[i]);
             }
         }
-        return allBoardsPruned;
-        // need to prune same board states because some pieces have different rotation but same output.
+        return [allBoardsPruned, instructionsPruned];
     }
 
-    dfs(board, piece, visited, allBoards, currentInstructions, listOfInstructions) {
-        const stringRep = `${piece.shape}, ${piece.x}, ${piece.y}, ${piece.rotation}`;
-        // console.log(stringRep);
-        if (visited.includes(stringRep)) {
-            return;
-        } else {
-            visited.push(stringRep);
-        }
-
-        // need to see if moving down would place the piece. If it does, then add the piece to copy of board. add that board to all board  states.
-        
-
-        if (board.isValidPosition(piece, -1, 0)) { //dfs(move left piece)
-            currentInstructions.push("Move Left");
-            const tempPiece = piece.getDeepCopy();
-            tempPiece.move(-1, 0);
-            this.dfs(board, tempPiece, visited, allBoards);
-            currentInstructions.pop();
-        }
-        if (board.isValidPosition(piece, 1, 0)) { // dfs(move right piece)
-            const tempPiece = piece.getDeepCopy();
-            tempPiece.move(1, 0);
-            this.dfs(board, tempPiece, visited, allBoards);
-        }
-        if (board.isValidPosition(piece, 0, 1)) { // dfs(move down piece)
-            const tempPiece = piece.getDeepCopy();
-            tempPiece.move(0, 1);
-            this.dfs(board, tempPiece, visited, allBoards);
-        }
-
-        // dfs(rotate piece cw)
-        const rotatedCWPiece = piece.getDeepCopy();
-        rotatedCWPiece.rotate(board, 1);
-        this.dfs(board, rotatedCWPiece, visited, allBoards);
-
-        // dfs(rotate piece ccw)
-        const rotatedCCWPiece = piece.getDeepCopy();
-        rotatedCCWPiece.rotate(board, -1);
-        this.dfs(board, rotatedCCWPiece, visited, allBoards);
-
-        // dfs using hold
-        if(this.holdAvailable){
-            if(this.heldPiece == null){
-                const nextPieceInQueue = this.queue.nextPieces[0].getDeepCopy();
-                this.dfs(this.board, nextPieceInQueue, visited, allBoards);
-            }else{
-                const heldPiece = this.heldPiece.getDeepCopy();
-                this.dfs(this.board, heldPiece, visited, allBoards);
+    bfs(board, start) {
+        let tempHoldAvailable = this.holdAvailable;
+        let queue = [];
+        let allBoards = [];
+        let allInstructions = [];
+        let visited = [];
+        queue.push([start, []]); // queue will be in format of [piece, [instructions]]
+        while (queue.length > 0) {
+            const [piece, currentInstructions] = queue.shift();
+            const stringRep = `${piece.shape}, ${piece.x}, ${piece.y}, ${piece.rotation}`;
+            if (visited.includes(stringRep)) {
+                continue;
+            } else {
+                visited.push(stringRep);
             }
-        }
+            if (currentInstructions[currentInstructions.length - 1] == "Harddrop") {
+                // Harddrop should always be last instruction
+                continue;
+            }
 
-        if (!board.isValidPosition(piece, 0, 1)) {
-            // piece can be placed here.
+            // harddrop will always be an option
+            let i;
+            for (i = 0; i < Constants.BOARD_HEIGHT - 1; i++) {
+                if (!board.isValidPosition(piece, 0, i + 1)) {
+                    break;
+                }
+            }
+            const nextInstructions = currentInstructions.slice();
+            nextInstructions.push("Harddrop");
+            const tempPiece = piece.getDeepCopy();
+            tempPiece.move(0, i);
+            queue.push([tempPiece, nextInstructions]);
+
             const newBoard = board.getDeepCopy();
-            newBoard.addPiece(piece);
+            newBoard.addPiece(tempPiece);
             allBoards.push(newBoard);
-            // console.log("added new board to all boards");
-            return;
+            allInstructions.push(nextInstructions);
+
+            if (currentInstructions[currentInstructions.length - 1] != "Move Right") {
+                if (board.isValidPosition(piece, -1, 0)) {
+                    const nextInstructions = currentInstructions.slice();
+                    nextInstructions.push("Move Left");
+                    const tempPiece = piece.getDeepCopy();
+                    tempPiece.move(-1, 0);
+                    queue.push([tempPiece, nextInstructions]);
+                }
+            }
+            if (currentInstructions[currentInstructions.length - 1] != "Move Left") {
+                if (board.isValidPosition(piece, 1, 0)) {
+                    const nextInstructions = currentInstructions.slice();
+                    nextInstructions.push("Move Right");
+                    const tempPiece = piece.getDeepCopy();
+                    tempPiece.move(1, 0);
+                    queue.push([tempPiece, nextInstructions]);
+                }
+            }
+            if (currentInstructions[currentInstructions.length - 1] != "Rotate CCW") {
+                if (board.isValidRotation(piece, 1)) {
+                    const nextInstructions = currentInstructions.slice();
+                    nextInstructions.push("Rotate CW");
+                    const tempPiece = piece.getDeepCopy();
+                    tempPiece.rotate(board, 1);
+                    queue.push([tempPiece, nextInstructions]);
+                }
+            }
+            if (currentInstructions[currentInstructions.length - 1] != "Rotate CW") {
+                if (board.isValidRotation(piece, -1)) {
+                    const nextInstructions = currentInstructions.slice();
+                    nextInstructions.push("Rotate CCW");
+                    const tempPiece = piece.getDeepCopy();
+                    tempPiece.rotate(board, -1);
+                    queue.push([tempPiece, nextInstructions])
+                }
+            }
+            if (tempHoldAvailable) {
+                const nextInstructions = currentInstructions.slice();
+                nextInstructions.push("Hold");
+                if (this.heldPiece == null) {
+                    const tempPiece = this.queue.nextPieces[0].getDeepCopy();
+                    queue.push([tempPiece, nextInstructions]);
+                } else {
+                    const tempPiece = this.heldPiece.getDeepCopy();
+                    queue.push([tempPiece, nextInstructions]);
+                }
+                tempHoldAvailable = false;
+            }
+
+            if (board.isValidPosition(piece, 0, 1)) {
+                const nextInstructions = currentInstructions.slice();
+                nextInstructions.push("Softdrop");
+                const tempPiece = piece.getDeepCopy();
+                tempPiece.move(0, 1);
+                queue.push([tempPiece, nextInstructions]);
+            }
+
+
         }
+        return [allBoards, allInstructions]
     }
 
-    getBestBoardState(allBoardStates) {
+    getBestBoardState(allBoardStates, listOfInstructions) {
         // board state is "good" if 
         // low high difference (sum of differences of heights is low)
         // low number of holes (check if empty space underneath filled space)
         // low aggregate height (each column's height added up)
         // can score high with cleared lines // should be heavily weighted
+        let bestInstructions = [];
         let bestBoardState = allBoardStates[0];
         let bestBoardWeightedScore = -Infinity;
         for (let i = 0; i < allBoardStates.length; i++) {
@@ -118,11 +157,10 @@ export default class TetrisAI extends TetrisBaseGame {
             if (weightedScore > bestBoardWeightedScore) {
                 bestBoardWeightedScore = weightedScore;
                 bestBoardState = allBoardStates[i];
+                bestInstructions = listOfInstructions[i];
             }
         }
-        console.log(bestBoardState.toString());
-        console.log(bestBoardWeightedScore);
-        return bestBoardState;
+        return [bestBoardState, bestInstructions];
     }
 
 
