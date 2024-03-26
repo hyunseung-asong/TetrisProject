@@ -134,6 +134,27 @@ export default class TetrisAI extends TetrisBaseGame {
         return [allBoards, allInstructions]
     }
 
+    getTop10BoardStates(allBoardStatesAndInstructions){
+        const top10 = [];
+        const top10Weights = [];
+        const lowestTop10WeightedScore = -Infinity;
+        for (let i = 0; i < allBoardStatesAndInstructions.length; i++){
+            const boardState = allBoardStatesAndInstructions[i][0];
+            const bumpiness = boardState.calculateBumpiness();
+            const numHoles = boardState.calculateNumHoles();
+            const aggHeight = boardState.calculateAggregateHeight();
+            const numCompleteLines = boardState.calculateNumCompleteLines();
+            const score = this.updateScore(numCompleteLines, boardState.board);
+            const weightedScore = (AI.BUMPINESS_WEIGHT * bumpiness) + (AI.HOLES_WEIGHT * numHoles) + (AI.HEIGHT_WEIGHT * aggHeight) + (AI.SCORE_WEIGHT * score);
+            if(top10.length < 10){
+                top10.push(allBoardStatesAndInstructions[i]);
+                top10Weights.push(weightedScore);
+            }else{
+                
+            }
+        }
+    }
+
     getBestBoardState(allBoardStatesAndInstructions) {
         // board state is "good" if 
         // low high difference (sum of differences of heights is low)
@@ -161,15 +182,7 @@ export default class TetrisAI extends TetrisBaseGame {
     }
 
 
-    executeInstructions(listOfInstructions){
-        // NEED TO RENDER EACH STEP THOUGH
-        console.log(listOfInstructions);
-        for(let i = 0; i < listOfInstructions.length; i++){
-            console.log(`setting ${listOfInstructions[i]} to true, updating...`);
-            this.inputs[listOfInstructions[i]] = true;
-            this.update();
-        }
-    }
+    
 
     // setInput(input) {
     //     switch (input) {

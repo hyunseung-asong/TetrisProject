@@ -51,8 +51,17 @@ function logStatus(message) {
 }
 
 let renderDuringTraining = true;
-export async function maybeRenderDuringTraining(tetrisEnv) {
+export async function maybeRenderDuringTraining(tetrisEnv, listOfInstructions) {
     if (renderDuringTraining) {
+        executeInstructions(tetrisEnv, listOfInstructions);
+        await tf.nextFrame();
+    }
+}
+
+async function executeInstructions(tetrisEnv, listOfInstructions) {
+    for (let i = 0; i < listOfInstructions.length; i++) {
+        tetrisEnv.inputs[listOfInstructions[i]] = true;
+        tetrisEnv.update();
         tetrisRenderer.drawGame(tetrisEnv.getGameState(), tetrisEnv.getGameStats());
         await tf.nextFrame();
     }
@@ -270,7 +279,7 @@ export async function setUpUI() {
         while (!isDone) {
             steps++;
             tf.tidy(() => {
-                const allBoardEndStates = tetrisEnv.game.getAllBoardStates();
+                const allBoardEndStates = tetrisEnv.getAllBoardStates();
                 const action = policyNet.getActions(tetrisEnv.getStateTensor(), allBoardEndStates.length)[0];
                 logStatus(
                     `Test in progress. ` +

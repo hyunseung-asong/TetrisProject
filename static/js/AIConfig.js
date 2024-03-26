@@ -8,6 +8,6 @@ export const
     // weights are from https://codemyroad.wordpress.com/2013/04/14/tetris-ai-the-near-perfect-player/
     BUMPINESS_WEIGHT = -0.184483,
     HOLES_WEIGHT = -0.35663,
-    HEIGHT_WEIGHT = -0.510066,
+    HEIGHT_WEIGHT = -0.2,
     SCORE_WEIGHT = 0.760666 / 10.0 // some bs number. WE SHOULD USE GENETIC ALGORITHM TO CALCULATE THIS VALUE FOR OUR OWN PROGRAM
     ;

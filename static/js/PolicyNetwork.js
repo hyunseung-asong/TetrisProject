@@ -45,7 +45,7 @@ class PolicyNetwork {
                 // For every step of the game, remember gradients of the policy
                 // network's weights with respect to the probability of the action
                 // choice that lead to the reward.
-                const allBoardEndStates = tetrisEnv.game.getAllBoardStates();
+                const allBoardEndStates = tetrisEnv.getAllBoardStates();
                 const gradients = tf.tidy(() => {
                     const inputTensor = tetrisEnv.getStateTensor();
                     return this.getGradientsAndSaveActions(inputTensor, allBoardEndStates.length).grads;
@@ -57,11 +57,10 @@ class PolicyNetwork {
                 // action[1] should be the instructions to get to said state.
                 // tetrisEnv.setInput(actions[1]);
                 // tetrisEnv.update();
-                tetrisEnv.executeInstructions(actions[1]);
+                await maybeRenderDuringTraining(tetrisEnv, action[1]);
                 const isDone = tetrisEnv.getIsDone();
                 const reward = tetrisEnv.getReward();
 
-                await maybeRenderDuringTraining(tetrisEnv);
 
                 if (isDone) {
                     // When the game ends before max step count is reached, a reward of

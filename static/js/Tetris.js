@@ -228,14 +228,14 @@ export default class Tetris {
                                 const bestBoardStateAndInstructions = this.game.getBestBoardState(allBoardStatesAndInstructions);
                                 console.log(bestBoardStateAndInstructions[0].toString());
                                 console.log(bestBoardStateAndInstructions[1]);
-                                this.game.executeInstructions(bestBoardStateAndInstructions[1]);
+                                this.executeInstructions(bestBoardStateAndInstructions[1]);
                                 // for(let i = 0 ; i < bs.length; i++){
                                 //     console.log(bs[i].toString());
                                 // }
                                 // console.log(this.game.board.calculateBumpiness());
                                 // console.log(this.game.board.calculateNumHoles());
                                 // console.log(this.game.board.calculateAggregateHeight());
-                                
+
                                 break;
                             default:
                                 break;
@@ -252,4 +252,18 @@ export default class Tetris {
             }
         });
     }
+
+    async executeInstructions(listOfInstructions) {
+        for (let i = 0; i < listOfInstructions.length; i++) {
+            this.game.inputs[listOfInstructions[i]] = true;
+            this.game.update();
+            await delay(this.interval);
+        }
+    }
+}
+
+function delay(milliseconds){
+    return new Promise(resolve => {
+        setTimeout(resolve, milliseconds);
+    });
 }
