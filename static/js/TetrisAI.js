@@ -134,11 +134,10 @@ export default class TetrisAI extends TetrisBaseGame {
         return [allBoards, allInstructions]
     }
 
-    getTop10BoardStates(allBoardStatesAndInstructions){
+    getTop10BoardStates(allBoardStatesAndInstructions) {
         const top10 = [];
-        const top10Weights = [];
-        const lowestTop10WeightedScore = -Infinity;
-        for (let i = 0; i < allBoardStatesAndInstructions.length; i++){
+        const temp = [];
+        for (let i = 0; i < allBoardStatesAndInstructions.length; i++) {
             const boardState = allBoardStatesAndInstructions[i][0];
             const bumpiness = boardState.calculateBumpiness();
             const numHoles = boardState.calculateNumHoles();
@@ -146,13 +145,16 @@ export default class TetrisAI extends TetrisBaseGame {
             const numCompleteLines = boardState.calculateNumCompleteLines();
             const score = this.updateScore(numCompleteLines, boardState.board);
             const weightedScore = (AI.BUMPINESS_WEIGHT * bumpiness) + (AI.HOLES_WEIGHT * numHoles) + (AI.HEIGHT_WEIGHT * aggHeight) + (AI.SCORE_WEIGHT * score);
-            if(top10.length < 10){
-                top10.push(allBoardStatesAndInstructions[i]);
-                top10Weights.push(weightedScore);
-            }else{
-                
-            }
+            temp.push([weightedScore, allBoardStatesAndInstructions[i]]);
         }
+        temp.sort((a, b) => a[0] - b[0]);
+        for (let i = temp.length - 1; i >= Math.max(temp.length - AI.NUM_INPUTS, 1); i--) {
+            top10.push(temp[i][1]);
+        }
+        if(temp.length <= 10){
+            top10.push([]);
+        }
+        return top10;
     }
 
     getBestBoardState(allBoardStatesAndInstructions) {
@@ -182,7 +184,7 @@ export default class TetrisAI extends TetrisBaseGame {
     }
 
 
-    
+
 
     // setInput(input) {
     //     switch (input) {

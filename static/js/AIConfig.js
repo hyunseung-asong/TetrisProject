@@ -4,7 +4,7 @@ export const
     INDEXEDDB_MODEL_SAVE_PATH_ = 'indexeddb://tetris-ai-v2.json',
     ACTION_COST = 1,
     EXTRANEOUS_ACTION_COST = 10,
-    NUM_INPUTS = 6,
+    NUM_INPUTS = 10,
     // weights are from https://codemyroad.wordpress.com/2013/04/14/tetris-ai-the-near-perfect-player/
     BUMPINESS_WEIGHT = -0.184483,
     HOLES_WEIGHT = -0.35663,

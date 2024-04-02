@@ -93,7 +93,7 @@ export default class TetrisBaseGame {
                 this.board.addPiece(this.currPiece);
                 let boardBeforeClear = this.board.getDeepCopy();
                 let linesCleared = this.board.removeCompleteLines();
-                this.score += this.updateScore(linesCleared, boardBeforeClear.board);
+                this.score += this.updateScore(linesCleared, boardBeforeClear);
                 this.totalLinesCleared += linesCleared;
                 this.level = Math.floor(this.totalLinesCleared / 10) + 1;
 
@@ -125,7 +125,7 @@ export default class TetrisBaseGame {
             return;
         } else {
             if (this.currPiece.shape == "T" && this.rotationBeforeMovementOccurred) {
-                const tSpinCalc = boardBeforeClear.tSpinInfo(this.currPiece, boardBeforeClear);
+                const tSpinCalc = boardBeforeClear.tSpinInfo(this.currPiece);
                 const cornersFilled = tSpinCalc[0];
                 const cornersFacing = tSpinCalc[1];
                 if (cornersFacing == 2 || this.currPiece.tstOrFinKicked) {

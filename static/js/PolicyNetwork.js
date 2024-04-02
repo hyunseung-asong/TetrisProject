@@ -46,18 +46,22 @@ class PolicyNetwork {
                 // network's weights with respect to the probability of the action
                 // choice that lead to the reward.
                 const allBoardEndStates = tetrisEnv.getAllBoardStates();
+                const top10 = tetrisEnv.getTop10BoardStates(allBoardEndStates);
                 const gradients = tf.tidy(() => {
                     const inputTensor = tetrisEnv.getStateTensor();
-                    return this.getGradientsAndSaveActions(inputTensor, allBoardEndStates.length).grads;
+                    return this.getGradientsAndSaveActions(inputTensor, top10.length).grads;
                 });
 
                 this.pushGradients(gameGradients, gradients);
                 const action = this.currentActions_[0]; // action is the board's "best" [end state, instructions] 
+                console.log(this.currentActions_);
+                const bestBoard = top10[action][0];
+                const bestInstructions = top10[action][1]
                 // action[0] is the "best" board state
                 // action[1] should be the instructions to get to said state.
                 // tetrisEnv.setInput(actions[1]);
                 // tetrisEnv.update();
-                await maybeRenderDuringTraining(tetrisEnv, action[1]);
+                await maybeRenderDuringTraining(tetrisEnv, bestInstructions);
                 const isDone = tetrisEnv.getIsDone();
                 const reward = tetrisEnv.getReward();
 
