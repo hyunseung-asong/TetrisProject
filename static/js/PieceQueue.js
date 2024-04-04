@@ -36,4 +36,12 @@ export default class PieceQueue {
             shapes.splice(r, 1);
         }
     }
+
+    getAllPositions(){
+        let res = [];
+        for (let i = 0; i < this.queue.length; i++){
+            res.push(this.queue[i].positions);
+        }
+        return res;
+    }
 }
