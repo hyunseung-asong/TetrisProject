@@ -1,7 +1,7 @@
-import TetrisBaseGame from "./TetrisBaseGame.js";
+import TetrisBaseGame from "../TetrisBaseGame.js";
 import TetrisAI from "./TetrisAI.js";
-import Renderer from "./Renderer.js";
-import * as Config from "./Config.js";
+import Renderer from "../Renderer.js";
+import * as Config from "../Config.js";
 
 export default class Tetris {
     constructor(canvas) {
@@ -227,7 +227,7 @@ export default class Tetris {
                                 const allBoardStatesAndInstructions = this.game.getAllBoardStates();
                                 const top10 = this.game.getTop10BoardStates(allBoardStatesAndInstructions);
                                 this.executeInstructions(top10[0][1]);
-                                
+
                                 // const bestBoardStateAndInstructions = this.game.getBestBoardState(allBoardStatesAndInstructions);
                                 // console.log(bestBoardStateAndInstructions[0].toString());
                                 // console.log(bestBoardStateAndInstructions[1]);

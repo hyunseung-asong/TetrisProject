@@ -11,7 +11,7 @@ export default class Piece {
         this.tstOrFinKicked = false;
     }
 
-    getDeepCopy(){
+    getDeepCopy() {
         return new Piece(this.shape, this.rotation, this.x, this.y)
     }
 
@@ -37,7 +37,7 @@ export default class Piece {
         this.updatePositions();
     }
 
-    
+
 
     rotate(board, adjr) {
         if (this.shape == 'O') {

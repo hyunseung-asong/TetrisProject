@@ -1,8 +1,9 @@
-import Tetris from "./Tetris.js";
+import Tetris from "./not used/Tetris.js";
 import * as Config from "./Config.js";
-import TetrisAI from "./TetrisAI.js";
+import TetrisAI from "./not used/TetrisAI.js";
 import Renderer from "./Renderer.js";
 import Environment from "./Environment.js";
+import Agent from "./Agent.js";
 
 
 const tetrisCanvas = document.getElementById('tetris-canvas');
@@ -18,8 +19,9 @@ font.load().then(
     },
 );
 
+const agt = new Agent();
 const env = new Environment();
-env.getState();
+
 
 
 // const env = new Tetris(tetrisCanvas);

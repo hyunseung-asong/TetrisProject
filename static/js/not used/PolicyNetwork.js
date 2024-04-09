@@ -1,6 +1,6 @@
 
 import { maybeRenderDuringTraining, onGameEnd, setUpUI } from './AITrainer.js';
-import * as AI from "./AIConfig.js";
+import * as AI from "../AIConfig.js";
 
 const inputShape = 296;
 

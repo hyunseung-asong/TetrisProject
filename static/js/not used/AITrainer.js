@@ -1,7 +1,7 @@
 import Tetris from "./Tetris.js";
-import * as Config from "./Config.js";
+import * as Config from "../Config.js";
 import TetrisAI from "./TetrisAI.js";
-import Renderer from "./Renderer.js";
+import Renderer from "../Renderer.js";
 
 import { SaveablePolicyNetwork } from './PolicyNetwork.js';
 import { mean, sum } from './utils.js';
