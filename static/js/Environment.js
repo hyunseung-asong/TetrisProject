@@ -9,6 +9,9 @@ export default class Environment {
         this.tetris = new TetrisBaseGame();
         this.stepsWithoutPlacing = 0;
         this.currAction = "Softdrop";
+        
+        this.gameState = this.tetris.getGameState();
+        this.gameStats = this.tetris.getGameStats();
     }
 
     // returns the board, current piece, held piece, next pieces. as a 2D [31,10] tensor in the format [[currPiece], [heldPiece], [nextPieces], [board]]
@@ -38,8 +41,8 @@ export default class Environment {
             state.push(board[i]);
         }
 
-        const tens = tf.tensor2d(state, [31, 10]);
-        // tens.print(true);
+        const tens = tf.tensor(state, [[31, 10]]);
+        tens.print(true);
         return tens;
     }
 
@@ -73,7 +76,11 @@ export default class Environment {
         this.currAction = action;
         this.tetris.setInput(action);
         this.tetris.update();
+        this.gameState = this.tetris.getGameState();
+        this.gameStats = this.tetris.getGameStats();
     }
 
-
+    isDone(){
+        return this.gameState['gameOver'];
+    }
 }

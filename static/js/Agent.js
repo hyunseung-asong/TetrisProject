@@ -10,7 +10,7 @@ export default class Agent{
             this.brain = brain.copy();
         }else{
             // [31, 10] input, 1 hiddenlayer of 16 size, 1 output layer of 7 size
-            this.brain = new NeuralNetwork([31,10], 16, 7);
+            this.brain = new NeuralNetwork([31, 10], 16, 7);
         }
     }
 

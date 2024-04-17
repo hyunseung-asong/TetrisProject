@@ -6,29 +6,93 @@ import Environment from "./Environment.js";
 import Agent from "./Agent.js";
 
 
-const tetrisCanvas = document.getElementById('tetris-canvas');
+const rows = 4;
+const cols = 6;
+const totalPopulation = rows * cols;
+let aliveAgents = [];
+let aliveEnvs = [];
+let aliveRenderers = []
+let allEnvs = [];
+let allAgents = [];
+let allRenderers = [];
+let generation = 1;
+let generationSpan;
 
-const font = new FontFace(Config.TEXT_FONT, 'url(' + Config.TEXT_FONT_LOCATION + ')');
-font.load().then(
-    () => {
-        document.fonts.add(font);
+function preload() {
+    const font = new FontFace(Config.TEXT_FONT, 'url(' + Config.TEXT_FONT_LOCATION + ')');
+    font.load().then(
+        () => {
+            document.fonts.add(font);
 
-    },
-    (err) => {
-        console.error(err);
-    },
-);
+        },
+        (err) => {
+            console.error(err);
+        },
+    );
+}
 
-const agt = new Agent();
-const env = new Environment();
+function setup() {
+    let canvas = document.getElementById('tetris-canvas');
+    let row = 0; 
+    let col = 0;
+    for (let i = 0; i < totalPopulation; i++) {
+        let agent = new Agent();
+        let env = new Environment();
+        let renderer = new Renderer(canvas, col, row);
+        col++;
+        if(col == cols){
+            col = 0;
+            row++;
+        }
+        if(row == rows){
+            row = 0;
+            col = 0;
+        }
+        console.log(`${row}, ${col}`);
+        aliveAgents[i] = agent;
+        aliveEnvs[i] = env;
+        aliveRenderers[i] = renderer;
+        allAgents[i] = agent;
+        allEnvs[i] = env;
+        allRenderers[i] = renderer;
+    }
+}
+
+function draw() {
+    for (let i = aliveAgents.length - 1; i >= 0; i--) {
+        let agent = aliveAgents[i];
+
+        for (let i = 0; i < aliveRenderers.length; i++) {
+            aliveRenderers[i].drawGame(aliveEnvs[i].gameState, aliveEnvs[i].gameStats);
+        }
 
 
+        agent.chooseAction(aliveEnvs[i].getState());
+        agent.update();
 
-// const env = new Tetris(tetrisCanvas);
-// const renderer = new Renderer(tetrisCanvas);
+        if (agent.isDone()) {
+            aliveAgents.splice(i, 1);
+            aliveEnvs.splice(i, 1);
+            aliveRenderers.splice(i, 1);
+        }
+    }
 
-// env.start();
-// console.log(env.game.currPiece);
-// console.log(env.game.board.toStringWithPiece(env.game.currPiece));
-// const allBoards = env.game.getAllBoardStates();
-// console.log(allBoards);
+    
+
+    if (aliveAgents.length == 0) {
+        generation++;
+        createNextGeneration();
+    }
+}
+
+setup();
+draw();
+
+// for (let row = 0; row < 4; row++) {
+//     for (let col = 0; col < 6; col++) {
+//         const agt = new Agent();
+//         const env = new Environment();
+//         const renderer = new Renderer(tetrisCanvas, col, row);
+//         renderer.drawGame(env.tetris.getGameState(), env.tetris.getGameStats());
+//     }
+// }

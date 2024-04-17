@@ -39,17 +39,9 @@ export const
         'O': 'rgba(255, 255, 0, 0.45)'
     },
 
+    TEXT_FONT_LOCATION = "static/fonts/Montserrat-Medium.ttf"
     
 
     // font settings
-    FONT_SIZE = 36,
-    TEXT_FONT = "Montserrat-Medium",
-    TEXT_FONT_LOCATION = "static/fonts/Montserrat-Medium.ttf",
-    FONT_SIZE_LARGE = 36,
-    FONT_SIZE_MEDIUM = 30,
-    FONT_SIZE_SMALL = 24,
-    FONT_SIZE_SMALLEST = 12,
-    FONT_COLOR_YELLOW = 'rgba(238, 238, 0, 1)',
-    FONT_COLOR_WHITE = 'rgba(255, 255, 255, 1)',
-    FONT_BACKGROUND_COLOR = 'rgba(155, 155, 155, 1)'
+    
     ;
