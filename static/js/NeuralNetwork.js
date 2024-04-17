@@ -19,13 +19,15 @@ export default class NeuralNetwork {
             inputShape: this.inputNodes,
             activation: "relu"
         });
-        model.add(hiddenLayer);
 
+        model.add(hiddenLayer);
+        
         const outputLayer = tf.layers.dense({
             units: this.outputNodes,
             activation: "softmax"
         });
         model.add(outputLayer);
+        // model.compile({loss: "sparseCategoricalCrossentropy",optimizer:"adam"});
         return model;
     }
 

@@ -75,6 +75,10 @@ export default class Renderer {
         this.canvas_statstext_yoffset = this.yoffset + 2 * BORDER_SIZE + TEXT_HEIGHT + CANVAS_HOLD_HEIGHT + 3 * MARGIN_SIZE;
     }
 
+    clearAllBoards(){
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
 
     drawGame(gameState, gameStats) {
         this.eraseAll();
@@ -291,4 +295,5 @@ export default class Renderer {
         this.ctx.fillStyle = color;
         this.ctx.fillRect(Math.floor(xoffset + x * BOX_SIZE + 1), Math.floor(yoffset + y * BOX_SIZE + 1), BOX_SIZE - 1, BOX_SIZE - 1);
     }
+
 }

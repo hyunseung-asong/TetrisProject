@@ -10,7 +10,7 @@ export default class Agent{
             this.brain = brain.copy();
         }else{
             // [31, 10] input, 1 hiddenlayer of 16 size, 1 output layer of 7 size
-            this.brain = new NeuralNetwork([31, 10], 16, 7);
+            this.brain = new NeuralNetwork(296, 16, 7);
         }
     }
 
@@ -20,13 +20,15 @@ export default class Agent{
 
     chooseAction(state){
         // state input is the [31, 10] tensor
+        // this.brain.model.summary()
         const action = this.brain.predict(state);
-        this.doAction(action[0]);
+        this.doAction(action.indexOf(Math.max(...action)));
     }
 
     doAction(action){
-        const actionName = this.env.getActions()[action[0]];
+        const actionName = this.env.getActions()[action];
         this.env.doAction(actionName);
+        console.log(actionName);
     }
 
     update(){

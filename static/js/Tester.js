@@ -6,8 +6,8 @@ import Environment from "./Environment.js";
 import Agent from "./Agent.js";
 
 
-const rows = 4;
-const cols = 6;
+const rows = 3;
+const cols = 5;
 const totalPopulation = rows * cols;
 let aliveAgents = [];
 let aliveEnvs = [];
@@ -36,8 +36,8 @@ function setup() {
     let row = 0; 
     let col = 0;
     for (let i = 0; i < totalPopulation; i++) {
-        let agent = new Agent();
         let env = new Environment();
+        let agent = new Agent(null, env);
         let renderer = new Renderer(canvas, col, row);
         col++;
         if(col == cols){
@@ -48,7 +48,6 @@ function setup() {
             row = 0;
             col = 0;
         }
-        console.log(`${row}, ${col}`);
         aliveAgents[i] = agent;
         aliveEnvs[i] = env;
         aliveRenderers[i] = renderer;
@@ -59,18 +58,18 @@ function setup() {
 }
 
 function draw() {
+
+
     for (let i = aliveAgents.length - 1; i >= 0; i--) {
         let agent = aliveAgents[i];
-
-        for (let i = 0; i < aliveRenderers.length; i++) {
-            aliveRenderers[i].drawGame(aliveEnvs[i].gameState, aliveEnvs[i].gameStats);
-        }
-
-
+        let env = aliveEnvs[i];
+        
         agent.chooseAction(aliveEnvs[i].getState());
         agent.update();
 
-        if (agent.isDone()) {
+        // console.log(env);
+        if (env.isDone()) {
+            console.log(`agent ${i} is dead`);
             aliveAgents.splice(i, 1);
             aliveEnvs.splice(i, 1);
             aliveRenderers.splice(i, 1);
@@ -83,10 +82,15 @@ function draw() {
         generation++;
         createNextGeneration();
     }
+
+    for (let i = 0; i < allRenderers.length; i++) {
+        allRenderers[i].drawGame(allEnvs[i].gameState, allEnvs[i].gameStats);
+    }
 }
 
 setup();
 draw();
+
 
 // for (let row = 0; row < 4; row++) {
 //     for (let col = 0; col < 6; col++) {
