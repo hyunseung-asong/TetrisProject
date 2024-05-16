@@ -13,6 +13,9 @@ export default class NeuralNetwork {
     }
 
     createModel() { // probably need more layers
+        const learningRate = 0.0001;
+        const adamoptimizer = tf.train.adam(learningRate);
+
         const model = tf.sequential();
         const hiddenLayer = tf.layers.dense({
             units: this.hiddenNodes,
@@ -21,13 +24,13 @@ export default class NeuralNetwork {
         });
 
         model.add(hiddenLayer);
-        
+
         const outputLayer = tf.layers.dense({
             units: this.outputNodes,
             activation: "softmax"
         });
         model.add(outputLayer);
-        // model.compile({loss: "sparseCategoricalCrossentropy",optimizer:"adam"});
+        model.compile({ loss: "sparseCategoricalCrossentropy", optimizer: adamoptimizer });
         return model;
     }
 
@@ -50,7 +53,7 @@ export default class NeuralNetwork {
             for (let i = 0; i < weights.length; i++) {
                 let tensor = weights[i];
                 let shape = weights[i].shape;
-                let values = tensor.dataSync.slice();
+                let values = tensor.dataSync().slice();
                 for (let j = 0; j < values.length; j++) {
                     let w = values[j];
                     values[j] = w + Constants.MUTATION_POWER * gaussianRandom();
